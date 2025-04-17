@@ -1,15 +1,19 @@
-
 import React, { useState } from 'react';
-import { ArrowLeft, Package, CheckCircle, Clock, FileText, LogOut } from 'lucide-react';
+import { ArrowLeft, Package, CheckCircle, Clock, FileText, LogOut, ChefHat } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 
 const PartnerDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("pending");
+  const [chefTip, setChefTip] = useState("Essayez nos délicieux plats traditionnels malgaches, préparés avec des ingrédients frais du marché local!");
+  const [editingTip, setEditingTip] = useState(false);
+  const [tempTip, setTempTip] = useState(chefTip);
 
   const handleLogout = () => {
     toast({
@@ -31,6 +35,15 @@ const PartnerDashboard = () => {
       title: "Commande refusée",
       description: `La commande ${orderId} a été refusée.`,
       variant: "destructive",
+    });
+  };
+
+  const handleSaveTip = () => {
+    setChefTip(tempTip);
+    setEditingTip(false);
+    toast({
+      title: "Astuce du chef mise à jour",
+      description: "Votre astuce du chef a été mise à jour avec succès.",
     });
   };
 
@@ -76,6 +89,60 @@ const PartnerDashboard = () => {
       </header>
       
       <div className="max-w-6xl mx-auto p-4 pt-6">
+        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <ChefHat size={24} className="text-vitamora-orange" />
+              <h3 className="text-lg font-bold text-vitamora-green">L'astuce du chef</h3>
+            </div>
+            {!editingTip ? (
+              <Button 
+                onClick={() => setEditingTip(true)}
+                variant="outline" 
+                className="text-vitamora-orange border-vitamora-orange hover:bg-orange-50"
+              >
+                Modifier
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                    setEditingTip(false);
+                    setTempTip(chefTip);
+                  }}
+                  variant="outline" 
+                  className="border-red-500 text-red-500 hover:bg-red-50"
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  onClick={handleSaveTip}
+                  className="bg-vitamora-green text-white hover:bg-vitamora-green/90"
+                >
+                  Sauvegarder
+                </Button>
+              </div>
+            )}
+          </div>
+          
+          {!editingTip ? (
+            <div className="bg-vitamora-cream p-4 rounded-lg italic text-gray-700">
+              "{chefTip}"
+            </div>
+          ) : (
+            <Textarea 
+              value={tempTip}
+              onChange={(e) => setTempTip(e.target.value)}
+              className="min-h-[100px]"
+              placeholder="Entrez votre astuce culinaire ici..."
+            />
+          )}
+          
+          <div className="mt-4 text-sm text-gray-600">
+            Cette astuce sera affichée aux clients lors de leur commande pour les encourager �� essayer vos spécialités.
+          </div>
+        </div>
+        
         <div className="bg-white rounded-xl shadow-md p-6 mb-6">
           <h2 className="text-xl font-bold text-vitamora-orange mb-4">Tableau de bord partenaire</h2>
           

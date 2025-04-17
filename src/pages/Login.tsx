@@ -1,12 +1,19 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Phone, Lock } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from "@/hooks/use-toast";
+
+// Utilisateurs prédéfinis pour la démo
+const predefinedUsers = [
+  { email: 'admin@vitamora.com', password: 'admin123', role: 'admin' },
+  { email: 'partner@vitamora.com', password: 'partner123', role: 'partner' },
+  { email: 'client@vitamora.com', password: 'client123', role: 'client' }
+];
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -21,16 +28,44 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     
-    // Simuler une connexion
+    // Vérification des identifiants
+    const user = predefinedUsers.find(
+      user => user.email === email && user.password === password
+    );
+    
     setTimeout(() => {
       setLoading(false);
       
-      toast({
-        title: "Connexion réussie",
-        description: "Bienvenue sur Vita Mora!",
-      });
-      
-      navigate('/');
+      if (user) {
+        // Stocker les informations de l'utilisateur dans le localStorage
+        if (rememberMe) {
+          localStorage.setItem('vitamora_user', JSON.stringify({
+            email: user.email,
+            role: user.role
+          }));
+        }
+        
+        // Redirection basée sur le rôle
+        let redirectPath = '/';
+        if (user.role === 'admin') {
+          redirectPath = '/admin';
+        } else if (user.role === 'partner') {
+          redirectPath = '/partner';
+        }
+        
+        toast({
+          title: "Connexion réussie",
+          description: `Bienvenue sur Vita Mora, ${user.role === 'admin' ? 'Administrateur' : user.role === 'partner' ? 'Partenaire' : 'Client'}!`,
+        });
+        
+        navigate(redirectPath);
+      } else {
+        toast({
+          title: "Échec de la connexion",
+          description: "Email ou mot de passe incorrect. Veuillez réessayer.",
+          variant: "destructive"
+        });
+      }
     }, 1500);
   };
 
@@ -115,6 +150,15 @@ const Login = () => {
             {loading ? "Connexion en cours..." : "Se connecter"}
           </Button>
         </form>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
+          <h3 className="font-semibold mb-1">Identifiants de démo:</h3>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Admin:</strong> admin@vitamora.com / admin123</li>
+            <li><strong>Partenaire:</strong> partner@vitamora.com / partner123</li>
+            <li><strong>Client:</strong> client@vitamora.com / client123</li>
+          </ul>
+        </div>
 
         <div className="relative flex items-center justify-center my-4">
           <div className="border-t border-gray-300 absolute w-full"></div>
