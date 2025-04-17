@@ -18,6 +18,10 @@ import Groceries from "./pages/services/Groceries";
 import Aperitifs from "./pages/services/Aperitifs";
 import Medicines from "./pages/services/Medicines";
 import NotFound from "./pages/NotFound";
+import Cart from "./pages/Cart";
+import Payment from "./pages/Payment";
+import AdminDashboard from "./pages/admin/Dashboard";
+import PartnerDashboard from "./pages/partner/Dashboard";
 
 const queryClient = new QueryClient();
 
@@ -40,12 +44,18 @@ const App = () => (
           <Route path="/orders" element={<Orders />} />
           <Route path="/orders/:id" element={<OrderDetail />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/payment" element={<Payment />} />
           
           {/* Pages des services */}
           <Route path="/services/meals" element={<Meals />} />
           <Route path="/services/groceries" element={<Groceries />} />
           <Route path="/services/aperitifs" element={<Aperitifs />} />
           <Route path="/services/medicines" element={<Medicines />} />
+          
+          {/* Pages Admin et Partenaire */}
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/partner" element={<PartnerDashboard />} />
           
           {/* Page d'erreur 404 pour les routes non définies */}
           <Route path="*" element={<NotFound />} />
