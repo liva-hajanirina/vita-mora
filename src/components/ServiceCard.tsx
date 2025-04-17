@@ -9,6 +9,7 @@ interface ServiceCardProps {
   icon: LucideIcon;
   link: string;
   color?: string;
+  bgColor?: string;
 }
 
 const ServiceCard: React.FC<ServiceCardProps> = ({ 
@@ -16,12 +17,13 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   description, 
   icon: Icon, 
   link,
-  color = 'text-vitamora-orange'
+  color = 'text-vitamora-orange',
+  bgColor = 'bg-orange-50'
 }) => {
   return (
     <Link to={link} className="block">
-      <div className="service-card">
-        <div className={`rounded-full p-3 mb-3 ${color} self-start`}>
+      <div className="service-card hover:scale-105 hover:shadow-md transition-all duration-200">
+        <div className={`rounded-full p-3 mb-3 ${bgColor} ${color} self-start`}>
           <Icon size={24} />
         </div>
         <h3 className="font-bold text-lg mb-2 text-vitamora-green">{title}</h3>
