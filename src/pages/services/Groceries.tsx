@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Filter, Tag } from 'lucide-react';
 import Header from '@/components/Header';
@@ -7,6 +6,15 @@ import ProductCard from '@/components/ProductCard';
 import BottomNavigation from '@/components/BottomNavigation';
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from '@/components/ui/badge';
+
+interface Product {
+  id: number;
+  title: string;
+  price: number;
+  image: string;
+  category: string;
+  isLocal?: boolean;
+}
 
 const Groceries = () => {
   const { toast } = useToast();
@@ -23,8 +31,7 @@ const Groceries = () => {
     { id: 'rice', name: 'Riz' }
   ];
   
-  // Produits de supermarché
-  const supermarketProducts = [
+  const supermarketProducts: Product[] = [
     {
       id: 1,
       title: "Lait (1L)",
@@ -69,8 +76,7 @@ const Groceries = () => {
     }
   ];
   
-  // Produits de marché local
-  const localMarketProducts = [
+  const localMarketProducts: Product[] = [
     {
       id: 7,
       title: "Riz Makalioka (5kg)",
@@ -121,7 +127,6 @@ const Groceries = () => {
     }
   ];
   
-  // Filtrer les produits en fonction du type de magasin et de la catégorie
   const getFilteredProducts = () => {
     const allProducts = activeStoreType === 'supermarket' 
       ? supermarketProducts 
