@@ -1,47 +1,48 @@
 
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
-import { Home, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
-import Logo from "@/components/Logo";
-import { Button } from "@/components/ui/button";
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, Home } from 'lucide-react';
+import Logo from '@/components/Logo';
+import { Button } from '@/components/ui/button';
 
 const NotFound = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
-  }, [location.pathname]);
+  const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      <Logo className="h-24 mb-8" />
-      <div className="text-center max-w-md">
-        <h1 className="text-6xl font-bold mb-4 text-vitamora-green">404</h1>
-        <p className="text-xl text-gray-600 mb-2">Page non trouvée</p>
-        <p className="text-gray-500 mb-8">
-          La page que vous recherchez n'existe pas ou a été déplacée.
+    <div className="min-h-screen flex flex-col items-center justify-center bg-vitamora-cream p-4 text-center">
+      <Logo className="h-24 mb-6" />
+      
+      <h1 className="text-4xl font-bold text-vitamora-green mb-2">404</h1>
+      <h2 className="text-2xl font-semibold text-vitamora-orange mb-6">Page non trouvée</h2>
+      
+      <div className="bg-white rounded-xl shadow-md p-6 max-w-md mb-8">
+        <p className="text-gray-600 mb-6">
+          Oops! La page que vous recherchez semble avoir disparu. Retournez à l'accueil ou revenez à la page précédente.
         </p>
         
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button asChild variant="outline" className="flex items-center gap-2">
-            <Link to={-1 as any}>
-              <ArrowLeft size={18} />
-              <span>Retour</span>
-            </Link>
+          <Button 
+            onClick={() => navigate(-1)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <ChevronLeft size={18} />
+            Retour
           </Button>
           
-          <Button asChild className="bg-vitamora-orange hover:bg-vitamora-orange/90 flex items-center gap-2">
-            <Link to="/">
-              <Home size={18} />
-              <span>Accueil</span>
-            </Link>
+          <Button 
+            onClick={() => navigate('/')}
+            className="bg-vitamora-green hover:bg-vitamora-green/90 flex items-center gap-2"
+          >
+            <Home size={18} />
+            Retour à l'accueil
           </Button>
         </div>
       </div>
+      
+      <p className="text-sm text-gray-500">
+        &copy; {new Date().getFullYear()} Vita Mora - On le fait pour vous
+      </p>
     </div>
   );
 };

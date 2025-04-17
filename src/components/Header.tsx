@@ -4,6 +4,7 @@ import { ChevronLeft, Bell, User, Search, ShoppingBag } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import Logo from './Logo';
 import { Badge } from './ui/badge';
+import NotificationBar from './NotificationBar';
 
 interface HeaderProps {
   title?: string;
@@ -71,12 +72,7 @@ const Header: React.FC<HeaderProps> = ({
           )}
           
           {showNotification && (
-            <button className="relative p-2 text-vitamora-green hover:bg-gray-100 rounded-full transition-colors">
-              <Bell size={20} />
-              <span className="absolute top-1 right-1 bg-vitamora-orange text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                3
-              </span>
-            </button>
+            <NotificationBar count={3} onClick={() => navigate('/notifications')} />
           )}
           
           {showProfile && (

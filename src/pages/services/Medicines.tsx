@@ -1,69 +1,85 @@
 
 import React, { useState } from 'react';
-import { Filter, Upload, Info } from 'lucide-react';
+import { Filter, Upload, PillBottle } from 'lucide-react';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
 import BottomNavigation from '@/components/BottomNavigation';
 import { useToast } from "@/hooks/use-toast";
+import { Button } from '@/components/ui/button';
 
 const Medicines = () => {
   const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState('all');
+  const [showPrescriptionUpload, setShowPrescriptionUpload] = useState(false);
   
   const categories = [
     { id: 'all', name: 'Tous' },
-    { id: 'painkillers', name: 'Antidouleurs' },
-    { id: 'antibiotics', name: 'Antibiotiques' },
+    { id: 'painkillers', name: 'Douleur' },
+    { id: 'fever', name: 'Fièvre' },
+    { id: 'allergies', name: 'Allergies' },
     { id: 'vitamins', name: 'Vitamines' },
-    { id: 'firstaid', name: 'Premiers soins' },
-    { id: 'allergy', name: 'Allergies' }
+    { id: 'prescription', name: 'Ordonnance' }
   ];
   
   const products = [
     {
       id: 1,
       title: "Paracétamol (500mg)",
-      price: 2500,
-      image: "https://cdn.pixabay.com/photo/2016/12/05/19/49/syringe-1884784_1280.jpg",
+      price: 3500,
+      image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1460&q=80",
+      description: "Contre la douleur légère à modérée et la fièvre",
       category: "painkillers"
     },
     {
       id: 2,
       title: "Ibuprofène (400mg)",
-      price: 3500,
-      image: "https://cdn.pixabay.com/photo/2021/07/21/21/25/medication-6484335_1280.jpg",
+      price: 4500,
+      image: "https://images.unsplash.com/photo-1550572017-26b5c3e5d0a5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80",
+      description: "Anti-inflammatoire pour soulager douleur et inflammation",
       category: "painkillers"
     },
     {
       id: 3,
-      title: "Amoxicilline",
-      price: 7500,
-      image: "https://cdn.pixabay.com/photo/2022/02/09/23/01/pharmacy-7004865_1280.jpg",
-      category: "antibiotics"
-    },
-    {
-      id: 4,
-      title: "Vitamine C (30 comprimés)",
-      price: 8000,
-      image: "https://cdn.pixabay.com/photo/2021/11/14/15/54/bottle-6794842_1280.jpg",
+      title: "Vitamine C (1000mg)",
+      price: 15000,
+      image: "https://images.unsplash.com/photo-1606939884722-6d5856e8e336?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1476&q=80",
+      description: "Renforce le système immunitaire",
       category: "vitamins"
     },
     {
+      id: 4,
+      title: "Antihistaminique",
+      price: 6500,
+      image: "https://images.unsplash.com/photo-1631549916768-4119b2e5f926?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80",
+      description: "Contre les allergies, la rhinite et l'urticaire",
+      category: "allergies"
+    },
+    {
       id: 5,
-      title: "Kit premiers soins",
-      price: 15000,
-      image: "https://cdn.pixabay.com/photo/2014/12/10/20/56/medical-563427_1280.jpg",
-      category: "firstaid"
+      title: "Doliprane (1000mg)",
+      price: 5000,
+      image: "https://images.unsplash.com/photo-1628771065518-0d82f1938462?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+      description: "Pour soulager la fièvre et les maux de tête",
+      category: "fever"
     },
     {
       id: 6,
-      title: "Cétirizine (antihistaminique)",
-      price: 6000,
-      image: "https://images.unsplash.com/photo-1550572017-edd951b55104?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
-      category: "allergy"
+      title: "Complexe multivitaminé",
+      price: 22000,
+      image: "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+      description: "Vitamines et minéraux essentiels pour le bien-être quotidien",
+      category: "vitamins"
     }
   ];
+  
+  const handleUploadPrescription = () => {
+    toast({
+      title: "Ordonnance téléchargée",
+      description: "Votre ordonnance a été envoyée aux pharmacies partenaires. Nous vous contacterons bientôt.",
+    });
+    setShowPrescriptionUpload(false);
+  };
   
   const addToCart = (productId: number) => {
     const product = products.find(p => p.id === productId);
@@ -73,13 +89,6 @@ const Medicines = () => {
         description: `${product.title} a été ajouté à votre panier`,
       });
     }
-  };
-  
-  const handleUploadPrescription = () => {
-    toast({
-      title: "Fonctionnalité d'ordonnance",
-      description: "L'upload d'ordonnance sera disponible bientôt",
-    });
   };
 
   const filteredProducts = activeCategory === 'all' 
@@ -93,26 +102,49 @@ const Medicines = () => {
       <div className="vitamora-container">
         <SearchBar placeholder="Rechercher des médicaments..." />
         
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <div className="flex items-start">
-            <div className="bg-vitamora-green/10 p-2 rounded-full mr-3">
-              <Info size={24} className="text-vitamora-green" />
+        <div className="bg-vitamora-orange/10 rounded-lg p-4 mb-6">
+          <h3 className="font-bold text-vitamora-green">L'astuce du pharmacien</h3>
+          <p className="text-sm text-gray-700 mt-1">
+            Téléchargez votre ordonnance pour être mis en relation avec la pharmacie la plus proche disposant de vos médicaments.
+          </p>
+          <Button 
+            onClick={() => setShowPrescriptionUpload(true)}
+            className="mt-2 bg-vitamora-green hover:bg-vitamora-green/90 text-white flex items-center gap-2"
+          >
+            <Upload size={16} />
+            Télécharger une ordonnance
+          </Button>
+        </div>
+        
+        {showPrescriptionUpload && (
+          <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <h4 className="font-semibold text-vitamora-green mb-3">Télécharger votre ordonnance</h4>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-3">
+              <PillBottle size={36} className="mx-auto text-gray-400 mb-2" />
+              <p className="text-gray-500 mb-2">Cliquez pour sélectionner une image ou prenez une photo</p>
+              <input type="file" accept="image/*" className="hidden" id="prescription-upload" />
+              <label htmlFor="prescription-upload">
+                <Button variant="outline" className="mx-auto">
+                  Choisir un fichier
+                </Button>
+              </label>
             </div>
-            <div>
-              <h3 className="font-bold text-vitamora-green">Envoyez votre ordonnance</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Prenez une photo de votre ordonnance et recevez vos médicaments à domicile
-              </p>
-              <button 
-                onClick={handleUploadPrescription}
-                className="flex items-center gap-2 mt-3 bg-vitamora-green text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+            <div className="flex gap-2 justify-end">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowPrescriptionUpload(false)}
               >
-                <Upload size={18} />
-                <span>Envoyer une ordonnance</span>
-              </button>
+                Annuler
+              </Button>
+              <Button 
+                onClick={handleUploadPrescription}
+                className="bg-vitamora-green hover:bg-vitamora-green/90 text-white"
+              >
+                Envoyer
+              </Button>
             </div>
           </div>
-        </div>
+        )}
         
         <div className="flex justify-between items-center mb-4">
           <div className="flex-grow overflow-x-auto scrollbar-hide">
@@ -120,7 +152,12 @@ const Medicines = () => {
               {categories.map((category) => (
                 <button
                   key={category.id}
-                  onClick={() => setActiveCategory(category.id)}
+                  onClick={() => {
+                    setActiveCategory(category.id);
+                    if (category.id === 'prescription') {
+                      setShowPrescriptionUpload(true);
+                    }
+                  }}
                   className={`px-4 py-2 rounded-full whitespace-nowrap ${
                     activeCategory === category.id
                       ? 'bg-vitamora-green text-white'
@@ -145,6 +182,7 @@ const Medicines = () => {
               image={product.image}
               title={product.title}
               price={product.price}
+              description={product.description}
               onAddToCart={() => addToCart(product.id)}
             />
           ))}
