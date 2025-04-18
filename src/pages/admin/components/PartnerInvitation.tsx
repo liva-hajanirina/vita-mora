@@ -18,10 +18,10 @@ const PartnerInvitation = () => {
       const { error } = await supabase
         .from('partner_invitations')
         .insert({
-          email: formData.get('email'),
-          company_name: formData.get('companyName'),
-          company_address: formData.get('companyAddress'),
-          company_phone: formData.get('companyPhone'),
+          email: formData.get('email') as string,
+          company_name: formData.get('companyName') as string,
+          company_address: formData.get('companyAddress') as string,
+          company_phone: formData.get('companyPhone') as string,
           token: token,
           created_by: (await supabase.auth.getUser()).data.user?.id
         });

@@ -51,13 +51,13 @@ const MailConfiguration = () => {
       const { error } = await supabase
         .from('mail_configurations')
         .insert({
-          provider_name: formData.get('providerName'),
-          imap_host: formData.get('imapHost'),
+          provider_name: formData.get('providerName') as string,
+          imap_host: formData.get('imapHost') as string,
           imap_port: parseInt(formData.get('imapPort') as string),
-          smtp_host: formData.get('smtpHost'),
+          smtp_host: formData.get('smtpHost') as string,
           smtp_port: parseInt(formData.get('smtpPort') as string),
-          username: formData.get('username'),
-          password: formData.get('password')
+          username: formData.get('username') as string,
+          password: formData.get('password') as string
         });
 
       if (error) throw error;
