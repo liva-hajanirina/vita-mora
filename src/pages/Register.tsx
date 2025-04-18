@@ -1,12 +1,16 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ChevronLeft } from 'lucide-react';
+import { toast } from "sonner";
 import Logo from '@/components/Logo';
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 const Register = () => {
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -14,34 +18,36 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signUp, user } = useAuth();
 
-  const handleRegister = (e: React.FormEvent) => {
+  // Rediriger si l'utilisateur est déjà connecté
+  useEffect(() => {
+    if (user) {
+      navigate('/home');
+    }
+  }, [user, navigate]);
+
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     // Vérification des mots de passe
     if (password !== confirmPassword) {
-      toast({
-        title: "Erreur",
-        description: "Les mots de passe ne correspondent pas",
-        variant: "destructive",
-      });
+      toast.error("Les mots de passe ne correspondent pas");
       setLoading(false);
       return;
     }
     
-    // Simuler un enregistrement
-    setTimeout(() => {
-      setLoading(false);
-      
-      toast({
-        title: "Inscription réussie",
-        description: "Votre compte a été créé avec succès!",
+    try {
+      await signUp(email, password, {
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone
       });
-      
-      navigate('/');
-    }, 1500);
+    } catch (error: any) {
+      console.error("Erreur d'inscription:", error);
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,15 +70,28 @@ const Register = () => {
 
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Nom complet
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                Prénom
               </label>
-              <input
-                id="name"
+              <Input
+                id="firstName"
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full p-3 rounded-lg border border-gray-300 focus:ring-vitamora-orange focus:border-vitamora-orange"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Entrez votre prénom"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                Nom
+              </label>
+              <Input
+                id="lastName"
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
                 placeholder="Entrez votre nom"
                 required
               />
@@ -82,12 +101,11 @@ const Register = () => {
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email
               </label>
-              <input
+              <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-3 rounded-lg border border-gray-300 focus:ring-vitamora-orange focus:border-vitamora-orange"
                 placeholder="Entrez votre email"
                 required
               />
@@ -97,12 +115,11 @@ const Register = () => {
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                 Téléphone
               </label>
-              <input
+              <Input
                 id="phone"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full p-3 rounded-lg border border-gray-300 focus:ring-vitamora-orange focus:border-vitamora-orange"
                 placeholder="Entrez votre numéro de téléphone"
                 required
               />
@@ -113,12 +130,11 @@ const Register = () => {
                 Mot de passe
               </label>
               <div className="relative">
-                <input
+                <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-3 rounded-lg border border-gray-300 focus:ring-vitamora-orange focus:border-vitamora-orange"
                   placeholder="Créez un mot de passe"
                   required
                 />
@@ -136,24 +152,23 @@ const Register = () => {
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                 Confirmer le mot de passe
               </label>
-              <input
+              <Input
                 id="confirmPassword"
                 type={showPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full p-3 rounded-lg border border-gray-300 focus:ring-vitamora-orange focus:border-vitamora-orange"
                 placeholder="Confirmez votre mot de passe"
                 required
               />
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
               className="w-full bg-vitamora-orange text-white rounded-lg py-3 font-medium hover:bg-opacity-90 transition-colors disabled:opacity-70 mt-4"
             >
               {loading ? "Inscription en cours..." : "S'inscrire"}
-            </button>
+            </Button>
           </form>
 
           <div className="text-center mt-6">

@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { toast } from "sonner";
 import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
 
 const Login = () => {
@@ -15,25 +16,23 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
+
+  // Rediriger si l'utilisateur est déjà connecté
+  useEffect(() => {
+    if (user) {
+      navigate('/home');
+    }
+  }, [user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     
     try {
+      setLoading(true);
       await signIn(email, password);
-      toast({
-        title: "Connexion réussie",
-        description: "Bienvenue sur Vita Mora!",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Échec de la connexion",
-        description: error.message || "Email ou mot de passe incorrect. Veuillez réessayer.",
-        variant: "destructive"
-      });
+    } catch (error) {
+      console.error("Erreur de connexion:", error);
       setLoading(false);
     }
   };

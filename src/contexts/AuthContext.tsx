@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { toast } from "sonner";
 
 type AuthContextType = {
   session: Session | null;
@@ -11,6 +12,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, userData: { first_name: string; last_name: string; phone: string; }) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,9 +23,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Fonction pour rafraîchir la session
+  const refreshSession = async () => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) throw error;
+      
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+    } catch (error) {
+      console.error("Erreur lors du rafraîchissement de la session:", error);
+    }
+  };
+
   useEffect(() => {
     // Configurer le listener pour les changements d'authentification
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      console.log("Auth state change:", event, currentSession?.user?.email);
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setLoading(false);
@@ -31,6 +47,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Vérifier la session existante
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log("Session initiale:", currentSession?.user?.email);
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setLoading(false);
@@ -40,44 +57,75 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Connexion réussie!");
+      navigate('/home');
+    } catch (error: any) {
+      console.error("Erreur de connexion:", error.message);
+      toast.error(error.message || "Email ou mot de passe incorrect");
       throw error;
+    } finally {
+      setLoading(false);
     }
-    
-    navigate('/home');
   };
 
   const signUp = async (email: string, password: string, userData: { first_name: string; last_name: string; phone: string; }) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: userData,
-      },
-    });
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userData,
+        },
+      });
 
-    if (error) {
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Compte créé avec succès!");
+      navigate('/home');
+    } catch (error: any) {
+      console.error("Erreur d'inscription:", error.message);
+      toast.error(error.message || "Une erreur s'est produite lors de l'inscription");
       throw error;
+    } finally {
+      setLoading(false);
     }
-
-    navigate('/home');
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Déconnexion réussie");
+      navigate('/login');
+    } catch (error: any) {
+      console.error("Erreur lors de la déconnexion:", error.message);
+      toast.error(error.message || "Une erreur s'est produite lors de la déconnexion");
       throw error;
+    } finally {
+      setLoading(false);
     }
-    navigate('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ session, user, loading, signIn, signUp, signOut, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );
