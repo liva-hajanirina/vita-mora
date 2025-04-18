@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      mail_configurations: {
+        Row: {
+          created_at: string
+          id: string
+          imap_host: string
+          imap_port: number
+          is_active: boolean | null
+          password: string
+          provider_name: string
+          smtp_host: string
+          smtp_port: number
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          imap_host: string
+          imap_port: number
+          is_active?: boolean | null
+          password: string
+          provider_name: string
+          smtp_host: string
+          smtp_port: number
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          imap_host?: string
+          imap_port?: number
+          is_active?: boolean | null
+          password?: string
+          provider_name?: string
+          smtp_host?: string
+          smtp_port?: number
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -177,6 +219,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      partner_invitations: {
+        Row: {
+          company_address: string | null
+          company_name: string
+          company_phone: string | null
+          created_at: string
+          created_by: string
+          email: string
+          expires_at: string
+          id: string
+          status: string
+          token: string
+        }
+        Insert: {
+          company_address?: string | null
+          company_name: string
+          company_phone?: string | null
+          created_at?: string
+          created_by: string
+          email: string
+          expires_at?: string
+          id?: string
+          status?: string
+          token: string
+        }
+        Update: {
+          company_address?: string | null
+          company_name?: string
+          company_phone?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          status?: string
+          token?: string
+        }
+        Relationships: []
       }
       products: {
         Row: {

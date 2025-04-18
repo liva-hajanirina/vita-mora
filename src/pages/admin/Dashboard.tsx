@@ -1,15 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Users, Package, Store, CreditCard, Palette, LogOut, PlusCircle, Save, UserCog, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import PartnerInvitation from './components/PartnerInvitation';
+import MailConfiguration from './components/MailConfiguration';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -28,7 +26,6 @@ const AdminDashboard = () => {
   const [partners, setPartners] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   
-  // App settings
   const [appSettings, setAppSettings] = useState({
     primaryColor: "#34D399",
     secondaryColor: "#F59E0B",
@@ -60,7 +57,6 @@ const AdminDashboard = () => {
     setLoading(true);
     
     try {
-      // Fetch user data
       if (user) {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
@@ -83,9 +79,6 @@ const AdminDashboard = () => {
         setUserData(profileData);
       }
       
-      // Fetch stats
-      // For demonstration, we'll use some sample data
-      // In a real app, this would be fetched from the database
       setStats({
         orders: 32,
         users: 128,
@@ -93,7 +86,6 @@ const AdminDashboard = () => {
         revenue: 1800000
       });
       
-      // Fetch users
       const { data: usersData, error: usersError } = await supabase
         .from('profiles')
         .select('*')
@@ -104,7 +96,6 @@ const AdminDashboard = () => {
       if (usersError) throw usersError;
       setUsers(usersData || []);
       
-      // Fetch partners
       const { data: partnersData, error: partnersError } = await supabase
         .from('profiles')
         .select('*')
@@ -115,7 +106,6 @@ const AdminDashboard = () => {
       if (partnersError) throw partnersError;
       setPartners(partnersData || []);
       
-      // Fetch orders
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select(`
@@ -149,7 +139,6 @@ const AdminDashboard = () => {
     const address = formData.get('address') as string;
     
     try {
-      // Create user with partner role
       const { data, error } = await supabase.auth.admin.createUser({
         email,
         password,
@@ -163,7 +152,6 @@ const AdminDashboard = () => {
       
       if (error) throw error;
       
-      // Update profile with role
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
@@ -182,7 +170,6 @@ const AdminDashboard = () => {
         description: `Le partenaire ${firstName} ${lastName} a été créé avec succès`,
       });
       
-      // Refresh partners list
       fetchAdminData();
       
     } catch (error: any) {
@@ -283,11 +270,12 @@ const AdminDashboard = () => {
           </div>
           
           <Tabs defaultValue="orders" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-4 mb-6">
+            <TabsList className="grid grid-cols-5 mb-6">
               <TabsTrigger value="orders">Commandes</TabsTrigger>
               <TabsTrigger value="users">Utilisateurs</TabsTrigger>
               <TabsTrigger value="partners">Partenaires</TabsTrigger>
-              <TabsTrigger value="settings">Personnalisation</TabsTrigger>
+              <TabsTrigger value="mail">Messagerie</TabsTrigger>
+              <TabsTrigger value="settings">Paramètres</TabsTrigger>
             </TabsList>
             
             <TabsContent value="orders">
@@ -399,18 +387,7 @@ const AdminDashboard = () => {
             
             <TabsContent value="partners">
               <div className="bg-white rounded-lg border p-4 h-96 overflow-y-auto">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold text-vitamora-green">Gestion des partenaires</h3>
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    className="bg-vitamora-orange hover:bg-vitamora-orange/90 flex items-center gap-1"
-                    onClick={() => document.getElementById('add-partner-form')?.scrollIntoView({ behavior: 'smooth' })}
-                  >
-                    <PlusCircle size={16} />
-                    <span>Ajouter un partenaire</span>
-                  </Button>
-                </div>
+                <PartnerInvitation />
                 
                 <div className="overflow-x-auto mb-6">
                   <table className="min-w-full">
@@ -447,44 +424,12 @@ const AdminDashboard = () => {
                     </tbody>
                   </table>
                 </div>
-                
-                <div id="add-partner-form" className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-vitamora-green mb-3">Ajouter un nouveau partenaire</h4>
-                  <form onSubmit={(e) => {
-                    e.preventDefault();
-                    handleCreatePartner(new FormData(e.currentTarget));
-                  }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
-                      <Input id="firstName" name="firstName" required />
-                    </div>
-                    <div>
-                      <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-                      <Input id="lastName" name="lastName" required />
-                    </div>
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <Input id="email" name="email" type="email" required />
-                    </div>
-                    <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
-                      <Input id="phone" name="phone" type="tel" required />
-                    </div>
-                    <div>
-                      <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
-                      <Input id="address" name="address" required />
-                    </div>
-                    <div>
-                      <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
-                      <Input id="password" name="password" type="password" required />
-                    </div>
-                    <div className="md:col-span-2 flex justify-end">
-                      <Button type="submit" className="bg-vitamora-orange hover:bg-vitamora-orange/90">
-                        Ajouter le partenaire
-                      </Button>
-                    </div>
-                  </form>
-                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="mail">
+              <div className="bg-white rounded-lg border p-4 h-96 overflow-y-auto">
+                <MailConfiguration />
               </div>
             </TabsContent>
             
