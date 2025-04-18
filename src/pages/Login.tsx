@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
@@ -7,13 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from "@/hooks/use-toast";
-
-// Utilisateurs prédéfinis pour la démo
-const predefinedUsers = [
-  { email: 'admin@vitamora.com', password: 'admin123', role: 'admin' },
-  { email: 'partner@vitamora.com', password: 'partner123', role: 'partner' },
-  { email: 'client@vitamora.com', password: 'client123', role: 'client' }
-];
+import { useAuth } from '@/contexts/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -23,50 +16,26 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    // Vérification des identifiants
-    const user = predefinedUsers.find(
-      user => user.email === email && user.password === password
-    );
-    
-    setTimeout(() => {
+    try {
+      await signIn(email, password);
+      toast({
+        title: "Connexion réussie",
+        description: "Bienvenue sur Vita Mora!",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Échec de la connexion",
+        description: error.message || "Email ou mot de passe incorrect. Veuillez réessayer.",
+        variant: "destructive"
+      });
       setLoading(false);
-      
-      if (user) {
-        // Stocker les informations de l'utilisateur dans le localStorage
-        if (rememberMe) {
-          localStorage.setItem('vitamora_user', JSON.stringify({
-            email: user.email,
-            role: user.role
-          }));
-        }
-        
-        // Redirection basée sur le rôle
-        let redirectPath = '/';
-        if (user.role === 'admin') {
-          redirectPath = '/admin';
-        } else if (user.role === 'partner') {
-          redirectPath = '/partner';
-        }
-        
-        toast({
-          title: "Connexion réussie",
-          description: `Bienvenue sur Vita Mora, ${user.role === 'admin' ? 'Administrateur' : user.role === 'partner' ? 'Partenaire' : 'Client'}!`,
-        });
-        
-        navigate(redirectPath);
-      } else {
-        toast({
-          title: "Échec de la connexion",
-          description: "Email ou mot de passe incorrect. Veuillez réessayer.",
-          variant: "destructive"
-        });
-      }
-    }, 1500);
+    }
   };
 
   return (
