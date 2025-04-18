@@ -16,7 +16,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
+  const { signIn, signInWithGoogle, signInWithFacebook, user } = useAuth();
 
   // Rediriger si l'utilisateur est déjà connecté
   useEffect(() => {
@@ -34,6 +34,22 @@ const Login = () => {
     } catch (error) {
       console.error("Erreur de connexion:", error);
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.error("Erreur lors de la connexion avec Google:", error);
+    }
+  };
+
+  const handleFacebookSignIn = async () => {
+    try {
+      await signInWithFacebook();
+    } catch (error) {
+      console.error("Erreur lors de la connexion avec Facebook:", error);
     }
   };
 
@@ -127,6 +143,7 @@ const Login = () => {
         <div className="grid grid-cols-1 gap-3">
           <button
             type="button"
+            onClick={handleGoogleSignIn}
             className="w-full border border-gray-300 bg-white text-gray-700 rounded-lg py-3 font-medium hover:bg-gray-50 transition-colors flex items-center justify-center"
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -152,6 +169,7 @@ const Login = () => {
 
           <button
             type="button"
+            onClick={handleFacebookSignIn}
             className="w-full border border-gray-300 bg-[#1877F2] text-white rounded-lg py-3 font-medium hover:bg-[#1877F2]/90 transition-colors flex items-center justify-center"
           >
             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">

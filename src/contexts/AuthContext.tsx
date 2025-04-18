@@ -13,6 +13,8 @@ type AuthContextType = {
   signUp: (email: string, password: string, userData: { first_name: string; last_name: string; phone: string; }) => Promise<void>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signInWithFacebook: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -105,6 +107,48 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/home'
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+      // La redirection est gérée automatiquement par Supabase
+    } catch (error: any) {
+      console.error("Erreur de connexion avec Google:", error.message);
+      toast.error(error.message || "Erreur lors de la connexion avec Google");
+      setLoading(false);
+    }
+  };
+
+  const signInWithFacebook = async () => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: {
+          redirectTo: window.location.origin + '/home'
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+      // La redirection est gérée automatiquement par Supabase
+    } catch (error: any) {
+      console.error("Erreur de connexion avec Facebook:", error.message);
+      toast.error(error.message || "Erreur lors de la connexion avec Facebook");
+      setLoading(false);
+    }
+  };
+
   const signOut = async () => {
     try {
       setLoading(true);
@@ -125,7 +169,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, loading, signIn, signUp, signOut, refreshSession }}>
+    <AuthContext.Provider value={{ session, user, loading, signIn, signUp, signOut, refreshSession, signInWithGoogle, signInWithFacebook }}>
       {children}
     </AuthContext.Provider>
   );
