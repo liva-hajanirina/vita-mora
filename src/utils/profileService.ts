@@ -28,7 +28,19 @@ export const getProfileById = async (userId: string): Promise<Profile | null> =>
     return null;
   }
 
-  return data;
+  // Ensure the role is one of the allowed values
+  if (data && (data.role === 'client' || data.role === 'partner' || data.role === 'admin')) {
+    return data as Profile;
+  } else if (data) {
+    // If we have data but the role is invalid, default to 'client'
+    console.warn('Role invalid détecté, utilisation de "client" par défaut');
+    return {
+      ...data,
+      role: 'client' as const
+    } as Profile;
+  }
+
+  return null;
 };
 
 /**
