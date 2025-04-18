@@ -1,42 +1,84 @@
 
-import React from 'react';
-import { Plus } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Plus, RefreshCw } from 'lucide-react';
 import Header from '@/components/Header';
 import BottomNavigation from '@/components/BottomNavigation';
 import SocialPost from '@/components/SocialPost';
+import CreatePost from '@/components/CreatePost';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface Post {
+  id: string;
+  content: string;
+  image_url?: string;
+  likes_count: number;
+  comments_count: number;
+  created_at: string;
+  user: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    profile_image_url?: string;
+  };
+}
 
 const Social = () => {
-  const posts = [
-    {
-      id: 1,
-      username: "Sophie Rakoto",
-      avatar: "https://randomuser.me/api/portraits/women/12.jpg",
-      time: "Il y a 20 minutes",
-      content: "Je viens de recevoir ma commande de Pizza Express. Livraison rapide et pizza délicieuse comme toujours! 😋🍕",
-      image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=828&q=80",
-      likes: 24,
-      comments: 5
-    },
-    {
-      id: 2,
-      username: "Jean Andria",
-      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-      time: "Il y a 2 heures",
-      content: "Vita Mora vient de me livrer mes médicaments en 30 minutes seulement. Service impeccable! Merci l'équipe 👏",
-      likes: 18,
-      comments: 3
-    },
-    {
-      id: 3,
-      username: "Pharmacie Centrale",
-      avatar: "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
-      time: "Il y a 5 heures",
-      content: "Nous sommes ravis d'annoncer notre partenariat avec Vita Mora! Vous pouvez désormais commander vos médicaments et les recevoir directement chez vous.",
-      image: "https://images.unsplash.com/photo-1607619056574-7b8d3ee536b2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1240&q=80",
-      likes: 42,
-      comments: 7
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  const fetchPosts = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('social_posts')
+        .select(`
+          *,
+          user:profiles(id, first_name, last_name, profile_image_url)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      setPosts(data as unknown as Post[]);
+    } catch (error: any) {
+      console.error('Erreur lors du chargement des publications:', error.message);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les publications",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchPosts();
+    
+    // Subscribe to new posts
+    const subscription = supabase
+      .channel('social_posts_changes')
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'social_posts' 
+      }, () => {
+        fetchPosts();
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <div className="pb-20 min-h-screen bg-gray-50">
@@ -44,48 +86,86 @@ const Social = () => {
       
       <div className="vitamora-container">
         <div className="sticky top-16 z-10 bg-gray-50 pb-2">
-          <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
-            <div className="flex items-center gap-3">
-              <img 
-                src="https://randomuser.me/api/portraits/men/1.jpg" 
-                alt="Your avatar" 
-                className="w-10 h-10 rounded-full object-cover"
-              />
-              <div className="flex-grow bg-gray-100 rounded-full px-4 py-2 text-gray-500">
-                Quoi de neuf?
-              </div>
-            </div>
-            <div className="flex justify-around mt-3 pt-2 border-t border-gray-100">
-              <button className="flex items-center text-gray-500 gap-1">
-                📷 Photo
-              </button>
-              <button className="flex items-center text-gray-500 gap-1">
-                🎬 Vidéo
-              </button>
-              <button className="flex items-center text-gray-500 gap-1">
-                😊 Feeling
-              </button>
-            </div>
+          {!showCreatePost ? (
+            <Button
+              onClick={() => setShowCreatePost(true)}
+              className="w-full bg-white shadow-sm border border-gray-200 hover:bg-gray-50 text-gray-700 mb-4 flex items-center justify-center gap-2"
+            >
+              <Plus size={18} />
+              <span>Créer une publication</span>
+            </Button>
+          ) : (
+            <CreatePost />
+          )}
+          
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-medium text-gray-800">Publications récentes</h2>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={fetchPosts}
+              disabled={loading}
+              className="text-vitamora-orange hover:text-vitamora-orange/90 hover:bg-orange-50"
+            >
+              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+              <span className="ml-1">Actualiser</span>
+            </Button>
           </div>
         </div>
         
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <SocialPost 
-              key={post.id}
-              username={post.username}
-              avatar={post.avatar}
-              time={post.time}
-              content={post.content}
-              image={post.image}
-              likes={post.likes}
-              comments={post.comments}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-lg shadow animate-pulse p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-gray-200"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                    <div className="h-3 bg-gray-100 rounded w-1/4"></div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-100 rounded w-full"></div>
+                  <div className="h-3 bg-gray-100 rounded w-full"></div>
+                  <div className="h-3 bg-gray-100 rounded w-3/4"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : posts.length > 0 ? (
+          <div className="space-y-4">
+            {posts.map((post) => (
+              <SocialPost
+                key={post.id}
+                username={`${post.user.first_name} ${post.user.last_name}`}
+                avatar={post.user.profile_image_url || `https://ui-avatars.com/api/?name=${post.user.first_name}+${post.user.last_name}`}
+                time={new Date(post.created_at).toLocaleString('fr-FR', {
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+                content={post.content}
+                image={post.image_url}
+                likes={post.likes_count}
+                comments={post.comments_count}
+                postId={post.id}
+                userId={user?.id}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 bg-white rounded-lg shadow">
+            <p className="text-gray-500">Aucune publication pour le moment</p>
+            <p className="text-sm text-gray-400 mt-1">Soyez le premier à partager quelque chose!</p>
+          </div>
+        )}
       </div>
       
-      <button className="fixed right-6 bottom-20 bg-vitamora-orange text-white rounded-full p-3 shadow-lg hover:bg-opacity-90 transition-colors">
+      <button 
+        onClick={() => setShowCreatePost(true)}
+        className="fixed right-6 bottom-20 bg-vitamora-orange text-white rounded-full p-3 shadow-lg hover:bg-opacity-90 transition-colors"
+      >
         <Plus size={24} />
       </button>
       

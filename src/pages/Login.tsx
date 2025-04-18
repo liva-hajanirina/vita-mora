@@ -119,15 +119,6 @@ const Login = () => {
           </Button>
         </form>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
-          <h3 className="font-semibold mb-1">Identifiants de démo:</h3>
-          <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Admin:</strong> admin@vitamora.com / admin123</li>
-            <li><strong>Partenaire:</strong> partner@vitamora.com / partner123</li>
-            <li><strong>Client:</strong> client@vitamora.com / client123</li>
-          </ul>
-        </div>
-
         <div className="relative flex items-center justify-center my-4">
           <div className="border-t border-gray-300 absolute w-full"></div>
           <span className="relative px-4 bg-white text-sm text-gray-500">Ou</span>
