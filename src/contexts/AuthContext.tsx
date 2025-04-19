@@ -45,6 +45,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setLoading(false);
+      
+      // Rediriger l'utilisateur vers la page d'accueil s'il est connecté
+      if (event === 'SIGNED_IN' && currentSession) {
+        toast.success("Connexion réussie!");
+        navigate('/home');
+      } else if (event === 'SIGNED_OUT') {
+        navigate('/login');
+      }
     });
 
     // Vérifier la session existante
@@ -53,10 +61,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setLoading(false);
+      
+      // Rediriger l'utilisateur vers la page d'accueil s'il est déjà connecté
+      if (currentSession) {
+        navigate('/home');
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -70,8 +83,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw error;
       }
       
-      toast.success("Connexion réussie!");
-      navigate('/home');
+      // La redirection est gérée par le listener onAuthStateChange
     } catch (error: any) {
       console.error("Erreur de connexion:", error.message);
       toast.error(error.message || "Email ou mot de passe incorrect");
@@ -97,7 +109,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       toast.success("Compte créé avec succès!");
-      navigate('/home');
+      // La redirection est gérée par le listener onAuthStateChange
     } catch (error: any) {
       console.error("Erreur d'inscription:", error.message);
       toast.error(error.message || "Une erreur s'est produite lors de l'inscription");
@@ -113,7 +125,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/home'
+          redirectTo: `${window.location.origin}/home`
         }
       });
 
@@ -134,7 +146,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
-          redirectTo: window.location.origin + '/home'
+          redirectTo: `${window.location.origin}/home`
         }
       });
 
@@ -158,7 +170,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       toast.success("Déconnexion réussie");
-      navigate('/login');
+      // La redirection est gérée par le listener onAuthStateChange
     } catch (error: any) {
       console.error("Erreur lors de la déconnexion:", error.message);
       toast.error(error.message || "Une erreur s'est produite lors de la déconnexion");
