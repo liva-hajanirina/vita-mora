@@ -5,7 +5,7 @@ export const toggleFavorite = async (productId: string, userId: string): Promise
   try {
     // Vérifier si le produit est déjà en favori
     const { data: existingFavorite } = await supabase
-      .from('favorites')
+      .from('favorites' as any)
       .select('id')
       .eq('product_id', productId)
       .eq('user_id', userId)
@@ -14,7 +14,7 @@ export const toggleFavorite = async (productId: string, userId: string): Promise
     if (existingFavorite) {
       // Supprimer des favoris
       const { error } = await supabase
-        .from('favorites')
+        .from('favorites' as any)
         .delete()
         .eq('product_id', productId)
         .eq('user_id', userId);
@@ -24,8 +24,11 @@ export const toggleFavorite = async (productId: string, userId: string): Promise
     } else {
       // Ajouter aux favoris
       const { error } = await supabase
-        .from('favorites')
-        .insert({ product_id: productId, user_id: userId });
+        .from('favorites' as any)
+        .insert({ 
+          product_id: productId, 
+          user_id: userId 
+        } as any);
 
       if (error) throw error;
       return { success: true };
@@ -38,7 +41,7 @@ export const toggleFavorite = async (productId: string, userId: string): Promise
 
 export const getFavorites = async (userId: string) => {
   const { data, error } = await supabase
-    .from('favorites')
+    .from('favorites' as any)
     .select(`
       id,
       product_id,
@@ -62,7 +65,7 @@ export const getFavorites = async (userId: string) => {
 
 export const checkIsFavorite = async (productId: string, userId: string): Promise<boolean> => {
   const { data } = await supabase
-    .from('favorites')
+    .from('favorites' as any)
     .select('id')
     .eq('product_id', productId)
     .eq('user_id', userId)

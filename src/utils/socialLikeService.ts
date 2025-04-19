@@ -5,7 +5,7 @@ export const toggleSocialLike = async (postId: string, userId: string): Promise<
   try {
     // Vérifier si le post est déjà liké
     const { data: existingLike } = await supabase
-      .from('social_likes')
+      .from('social_likes' as any)
       .select('id')
       .eq('post_id', postId)
       .eq('user_id', userId)
@@ -14,7 +14,7 @@ export const toggleSocialLike = async (postId: string, userId: string): Promise<
     if (existingLike) {
       // Supprimer le like
       const { error } = await supabase
-        .from('social_likes')
+        .from('social_likes' as any)
         .delete()
         .eq('post_id', postId)
         .eq('user_id', userId);
@@ -24,8 +24,11 @@ export const toggleSocialLike = async (postId: string, userId: string): Promise<
     } else {
       // Ajouter le like
       const { error } = await supabase
-        .from('social_likes')
-        .insert({ post_id: postId, user_id: userId });
+        .from('social_likes' as any)
+        .insert({ 
+          post_id: postId, 
+          user_id: userId 
+        } as any);
 
       if (error) throw error;
       return { success: true };
@@ -39,7 +42,7 @@ export const toggleSocialLike = async (postId: string, userId: string): Promise<
 export const checkIsLiked = async (postId: string, userId: string): Promise<boolean> => {
   try {
     const { data } = await supabase
-      .from('social_likes')
+      .from('social_likes' as any)
       .select('id')
       .eq('post_id', postId)
       .eq('user_id', userId)
