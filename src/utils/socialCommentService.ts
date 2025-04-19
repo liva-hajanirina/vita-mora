@@ -55,7 +55,7 @@ export const addComment = async (postId: string, userId: string, content: string
         comments_count: supabase.rpc('increment', { 
           x: 1, 
           column_name: 'comments_count' 
-        }) as any 
+        } as any) as any 
       })
       .eq('id', postId);
 
@@ -83,7 +83,7 @@ export const deleteComment = async (commentId: string, postId: string, userId: s
         comments_count: supabase.rpc('increment', { 
           x: -1, 
           column_name: 'comments_count' 
-        }) as any 
+        } as any) as any 
       })
       .eq('id', postId);
 
@@ -93,6 +93,3 @@ export const deleteComment = async (commentId: string, postId: string, userId: s
     return { success: false, error: error.message };
   }
 };
-
-// Fonctions utilitaires pour incrémenter/décrémenter
-// These functions have been replaced with direct RPC calls above
