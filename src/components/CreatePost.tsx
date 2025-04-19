@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "sonner";
+import { uploadImage } from '@/utils/imageUploadService';
 
 const CreatePost = () => {
   const [content, setContent] = useState('');
@@ -13,7 +14,6 @@ const CreatePost = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
-  const { toast } = useToast();
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -33,11 +33,12 @@ const CreatePost = () => {
 
   const handleSubmit = async () => {
     if (!content.trim() && !image) {
-      toast({
-        title: "Publication vide",
-        description: "Veuillez ajouter du texte ou une image à votre publication.",
-        variant: "destructive"
-      });
+      toast.error("Veuillez ajouter du texte ou une image à votre publication.");
+      return;
+    }
+
+    if (!user) {
+      toast.error("Vous devez être connecté pour publier.");
       return;
     }
 
@@ -48,27 +49,20 @@ const CreatePost = () => {
 
       // Upload image if selected
       if (image) {
-        const fileName = `${Date.now()}-${user?.id}-${image.name}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('social_images')
-          .upload(fileName, image);
-
-        if (uploadError) {
-          throw new Error(`Erreur lors du téléchargement de l'image: ${uploadError.message}`);
+        const uploadResult = await uploadImage(image, 'social_images', `posts/${user.id}`);
+        
+        if (!uploadResult.success) {
+          throw new Error(`Erreur lors du téléchargement de l'image: ${uploadResult.error}`);
         }
-
-        const { data: publicUrlData } = supabase.storage
-          .from('social_images')
-          .getPublicUrl(fileName);
-
-        imageUrl = publicUrlData.publicUrl;
+        
+        imageUrl = uploadResult.url;
       }
 
       // Create post in database
       const { error: postError } = await supabase
         .from('social_posts')
         .insert({
-          user_id: user?.id,
+          user_id: user.id,
           content,
           image_url: imageUrl,
           likes_count: 0,
@@ -79,20 +73,14 @@ const CreatePost = () => {
         throw new Error(`Erreur lors de la création du post: ${postError.message}`);
       }
 
-      toast({
-        title: "Publication réussie",
-        description: "Votre publication a été créée avec succès.",
-      });
+      toast.success("Publication réussie!");
 
       // Reset form
       setContent('');
       removeImage();
     } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error(error.message || "Une erreur s'est produite lors de la publication");
+      console.error("Erreur de publication:", error);
     } finally {
       setIsLoading(false);
     }
@@ -151,8 +139,12 @@ const CreatePost = () => {
               disabled={isLoading || (!content.trim() && !image)}
               className="bg-vitamora-orange hover:bg-vitamora-orange/90 flex items-center gap-1"
             >
-              <Send size={16} />
-              <span>Publier</span>
+              {isLoading ? "Publication..." : (
+                <>
+                  <Send size={16} />
+                  <span>Publier</span>
+                </>
+              )}
             </Button>
           </div>
         </div>
