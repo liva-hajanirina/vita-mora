@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Trash2, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,14 +22,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-interface Comment {
-  id: string;
-  content: string;
-  created_at: string;
-  user: Profile;
-  user_id: string;
-}
+import { checkIsLiked, toggleSocialLike } from '@/utils/socialLikeService';
+import { Comment as CommentType, getCommentsByPostId, addComment, deleteComment } from '@/utils/socialCommentService';
 
 interface SocialPostProps {
   username: string;
@@ -56,7 +51,7 @@ const SocialPost: React.FC<SocialPostProps> = ({
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(initialLikes);
   const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<CommentType[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
@@ -64,14 +59,8 @@ const SocialPost: React.FC<SocialPostProps> = ({
   useEffect(() => {
     if (userId) {
       const checkLike = async () => {
-        const { data } = await supabase
-          .from('social_likes')
-          .select('id')
-          .eq('post_id', postId)
-          .eq('user_id', userId)
-          .single();
-        
-        setLiked(!!data);
+        const isLiked = await checkIsLiked(postId, userId);
+        setLiked(isLiked);
       };
       
       checkLike();
@@ -79,24 +68,8 @@ const SocialPost: React.FC<SocialPostProps> = ({
   }, [postId, userId]);
 
   const loadComments = async () => {
-    const { data: commentsData, error } = await supabase
-      .from('social_comments')
-      .select(`
-        id,
-        content,
-        created_at,
-        user_id,
-        user:profiles(*)
-      `)
-      .eq('post_id', postId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('Erreur lors du chargement des commentaires:', error);
-      return;
-    }
-
-    setComments(commentsData as Comment[]);
+    const commentsData = await getCommentsByPostId(postId);
+    setComments(commentsData);
   };
 
   useEffect(() => {
@@ -112,28 +85,20 @@ const SocialPost: React.FC<SocialPostProps> = ({
     }
 
     try {
-      if (liked) {
-        await supabase
-          .from('social_likes')
-          .delete()
-          .eq('post_id', postId)
-          .eq('user_id', userId);
-        
-        setLikeCount(prev => prev - 1);
-      } else {
-        await supabase
-          .from('social_likes')
-          .insert({ post_id: postId, user_id: userId });
-        
-        setLikeCount(prev => prev + 1);
+      const { success, error } = await toggleSocialLike(postId, userId);
+      
+      if (!success) {
+        throw new Error(error);
       }
+      
       setLiked(!liked);
+      setLikeCount(prev => prev + (liked ? -1 : 1));
       
       await supabase
         .from('social_posts')
         .update({ likes_count: likeCount + (liked ? -1 : 1) })
         .eq('id', postId);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors de la mise à jour des likes:', error);
       toast.error("Une erreur est survenue");
     }
@@ -144,20 +109,11 @@ const SocialPost: React.FC<SocialPostProps> = ({
 
     setIsSubmittingComment(true);
     try {
-      const { error } = await supabase
-        .from('social_comments')
-        .insert({ 
-          post_id: postId, 
-          user_id: userId,
-          content: newComment.trim()
-        });
+      const { success, error } = await addComment(postId, userId, newComment.trim());
 
-      if (error) throw error;
-
-      await supabase
-        .from('social_posts')
-        .update({ comments_count: initialComments + 1 })
-        .eq('id', postId);
+      if (!success) {
+        throw new Error(error);
+      }
 
       setNewComment('');
       loadComments();
@@ -172,18 +128,11 @@ const SocialPost: React.FC<SocialPostProps> = ({
 
   const handleDeleteComment = async (commentId: string) => {
     try {
-      const { error } = await supabase
-        .from('social_comments')
-        .delete()
-        .eq('id', commentId)
-        .eq('user_id', userId);
+      const { success, error } = await deleteComment(commentId, postId, userId!);
 
-      if (error) throw error;
-
-      await supabase
-        .from('social_posts')
-        .update({ comments_count: initialComments - 1 })
-        .eq('id', postId);
+      if (!success) {
+        throw new Error(error);
+      }
 
       loadComments();
       toast.success("Commentaire supprimé");
@@ -202,19 +151,12 @@ const SocialPost: React.FC<SocialPostProps> = ({
 
       if (error) throw error;
 
-      toast({
-        title: "Publication supprimée",
-        description: "Votre publication a été supprimée avec succès",
-      });
+      toast.success("Publication supprimée");
 
       // The post will be removed from the list in the parent component
       // through the real-time subscription
     } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: `Erreur lors de la suppression: ${error.message}`,
-        variant: "destructive"
-      });
+      toast.error(`Erreur lors de la suppression: ${error.message}`);
     }
   };
 
