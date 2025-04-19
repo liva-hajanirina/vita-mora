@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import type { Profile } from '@/utils/profileService';
 
@@ -38,7 +39,7 @@ export const getCommentsByPostId = async (postId: string): Promise<Comment[]> =>
 export const addComment = async (postId: string, userId: string, content: string): Promise<{ success: boolean; error?: string }> => {
   try {
     const { error } = await supabase
-      .from('social_comments')
+      .from('social_comments' as any)
       .insert({ 
         post_id: postId, 
         user_id: userId,
@@ -51,7 +52,7 @@ export const addComment = async (postId: string, userId: string, content: string
     await supabase
       .from('social_posts')
       .update({ 
-        comments_count: supabase.rpc('increment', { 
+        comments_count: supabase.rpc('increment' as any, { 
           x: 1 
         }) 
       } as any)
@@ -67,7 +68,7 @@ export const addComment = async (postId: string, userId: string, content: string
 export const deleteComment = async (commentId: string, postId: string, userId: string): Promise<{ success: boolean; error?: string }> => {
   try {
     const { error } = await supabase
-      .from('social_comments')
+      .from('social_comments' as any)
       .delete()
       .eq('id', commentId)
       .eq('user_id', userId);
@@ -78,7 +79,7 @@ export const deleteComment = async (commentId: string, postId: string, userId: s
     await supabase
       .from('social_posts')
       .update({ 
-        comments_count: supabase.rpc('increment', { 
+        comments_count: supabase.rpc('increment' as any, { 
           x: -1 
         }) 
       } as any)
