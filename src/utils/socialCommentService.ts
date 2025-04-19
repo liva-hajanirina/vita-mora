@@ -51,7 +51,12 @@ export const addComment = async (postId: string, userId: string, content: string
     // Mettre à jour le compteur de commentaires
     await supabase
       .from('social_posts')
-      .update({ comments_count: supabase.rpc('increment', { x: 1, column_name: 'comments_count' }) })
+      .update({ 
+        comments_count: supabase.rpc('increment', { 
+          x: 1, 
+          column_name: 'comments_count' 
+        }) as any 
+      })
       .eq('id', postId);
 
     return { success: true };
@@ -74,7 +79,12 @@ export const deleteComment = async (commentId: string, postId: string, userId: s
     // Mettre à jour le compteur de commentaires
     await supabase
       .from('social_posts')
-      .update({ comments_count: supabase.rpc('increment', { x: -1, column_name: 'comments_count' }) })
+      .update({ 
+        comments_count: supabase.rpc('increment', { 
+          x: -1, 
+          column_name: 'comments_count' 
+        }) as any 
+      })
       .eq('id', postId);
 
     return { success: true };
