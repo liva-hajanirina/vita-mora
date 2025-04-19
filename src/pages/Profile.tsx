@@ -18,7 +18,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from "sonner";
 import { uploadProfileImage } from '@/utils/imageUploadService';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { getProfileById, Profile } from '@/utils/profileService';
+import type { Profile } from '@/utils/profileService';
+import { getProfileById } from '@/utils/profileService';
 
 const Profile = () => {
   const navigate = useNavigate();
