@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import type { Profile } from '@/utils/profileService';
 
@@ -48,15 +47,15 @@ export const addComment = async (postId: string, userId: string, content: string
 
     if (error) throw error;
 
-    // Mettre à jour le compteur de commentaires
+    // Update comments count using a typed RPC call
     await supabase
       .from('social_posts')
       .update({ 
         comments_count: supabase.rpc('increment', { 
           x: 1, 
           column_name: 'comments_count' 
-        } as any) as any 
-      })
+        } as any) 
+      } as any)
       .eq('id', postId);
 
     return { success: true };
@@ -76,15 +75,15 @@ export const deleteComment = async (commentId: string, postId: string, userId: s
 
     if (error) throw error;
 
-    // Mettre à jour le compteur de commentaires
+    // Update comments count using a typed RPC call
     await supabase
       .from('social_posts')
       .update({ 
         comments_count: supabase.rpc('increment', { 
           x: -1, 
           column_name: 'comments_count' 
-        } as any) as any 
-      })
+        } as any) 
+      } as any)
       .eq('id', postId);
 
     return { success: true };
