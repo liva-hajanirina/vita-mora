@@ -13,7 +13,7 @@ export interface Comment {
 export const getCommentsByPostId = async (postId: string): Promise<Comment[]> => {
   try {
     const { data, error } = await supabase
-      .from('social_comments' as any)
+      .from('social_comments')
       .select(`
         id,
         content,
@@ -51,7 +51,7 @@ export const addComment = async (postId: string, userId: string, content: string
     
     // Add the comment
     const { error } = await supabase
-      .from('social_comments' as any)
+      .from('social_comments')
       .insert({ 
         post_id: postId, 
         user_id: userId,
@@ -88,7 +88,7 @@ export const deleteComment = async (commentId: string, postId: string, userId: s
     
     // Delete the comment
     const { error } = await supabase
-      .from('social_comments' as any)
+      .from('social_comments')
       .delete()
       .eq('id', commentId)
       .eq('user_id', userId);

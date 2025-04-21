@@ -35,8 +35,10 @@ export const uploadImage = async (
     const fileName = `${userId}-${Date.now()}.${fileExt}`;
     const filePath = `${folder}/${fileName}`;
 
+    console.log(`Tentative de téléchargement dans ${bucket}/${filePath}`);
+
     // Télécharger le fichier
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError, data: uploadData } = await supabase.storage
       .from(bucket)
       .upload(filePath, file, {
         cacheControl: '3600',
@@ -48,10 +50,14 @@ export const uploadImage = async (
       return { success: false, error: uploadError.message };
     }
 
+    console.log('Téléchargement réussi:', uploadData);
+
     // Obtenir l'URL publique
     const { data: urlData } = supabase.storage
       .from(bucket)
       .getPublicUrl(filePath);
+
+    console.log('URL publique:', urlData.publicUrl);
 
     return { success: true, url: urlData.publicUrl };
   } catch (error: any) {
@@ -66,28 +72,38 @@ export const uploadImage = async (
 export const uploadProfileImage = async (
   file: File
 ): Promise<{ success: boolean; url?: string; error?: string }> => {
-  const userId = (await supabase.auth.getUser()).data.user?.id;
-  
-  if (!userId) {
-    return { success: false, error: "Utilisateur non connecté" };
-  }
-
-  const result = await uploadImage(file, 'images', `profiles/${userId}`);
-  
-  if (result.success && result.url) {
-    // Mettre à jour le profil avec l'URL de l'image
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ profile_image_url: result.url })
-      .eq('id', userId);
-
-    if (updateError) {
-      console.error('Erreur lors de la mise à jour du profil:', updateError);
-      return { success: false, error: updateError.message };
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { success: false, error: "Utilisateur non connecté" };
     }
-
-    toast.success("Photo de profil mise à jour avec succès");
+    
+    const userId = user.id;
+    console.log('Téléchargement pour utilisateur:', userId);
+    
+    const result = await uploadImage(file, 'images', `profiles/${userId}`);
+    
+    if (result.success && result.url) {
+      console.log('Mise à jour du profil avec URL:', result.url);
+      
+      // Mettre à jour le profil avec l'URL de l'image
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ profile_image_url: result.url })
+        .eq('id', userId);
+  
+      if (updateError) {
+        console.error('Erreur lors de la mise à jour du profil:', updateError);
+        return { success: false, error: updateError.message };
+      }
+  
+      toast.success("Photo de profil mise à jour avec succès");
+    }
+  
+    return result;
+  } catch (error: any) {
+    console.error('Erreur lors du téléchargement de l\'image de profil:', error);
+    return { success: false, error: error.message };
   }
-
-  return result;
 };
