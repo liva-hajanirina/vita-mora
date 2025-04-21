@@ -12,8 +12,9 @@ export interface Comment {
 
 export const getCommentsByPostId = async (postId: string): Promise<Comment[]> => {
   try {
+    // Using a raw query to work around TypeScript limitations
     const { data, error } = await supabase
-      .from('social_comments')
+      .from('social_comments' as any)
       .select(`
         id,
         content,
@@ -49,9 +50,9 @@ export const addComment = async (postId: string, userId: string, content: string
     
     const currentCount = postData.comments_count || 0;
     
-    // Add the comment
+    // Add the comment using a raw query to work around TypeScript limitations
     const { error } = await supabase
-      .from('social_comments')
+      .from('social_comments' as any)
       .insert({ 
         post_id: postId, 
         user_id: userId,
@@ -86,9 +87,9 @@ export const deleteComment = async (commentId: string, postId: string, userId: s
     
     const currentCount = postData.comments_count || 0;
     
-    // Delete the comment
+    // Delete the comment using a raw query to work around TypeScript limitations
     const { error } = await supabase
-      .from('social_comments')
+      .from('social_comments' as any)
       .delete()
       .eq('id', commentId)
       .eq('user_id', userId);
