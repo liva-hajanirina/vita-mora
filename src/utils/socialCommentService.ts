@@ -38,6 +38,18 @@ export const getCommentsByPostId = async (postId: string): Promise<Comment[]> =>
 
 export const addComment = async (postId: string, userId: string, content: string): Promise<{ success: boolean; error?: string }> => {
   try {
+    // First, get the current comments count
+    const { data: postData, error: postError } = await supabase
+      .from('social_posts')
+      .select('comments_count')
+      .eq('id', postId)
+      .single();
+    
+    if (postError) throw postError;
+    
+    const currentCount = postData.comments_count || 0;
+    
+    // Add the comment
     const { error } = await supabase
       .from('social_comments' as any)
       .insert({ 
@@ -48,14 +60,10 @@ export const addComment = async (postId: string, userId: string, content: string
 
     if (error) throw error;
 
-    // Update comments count using a typed RPC call
+    // Update comments count by directly setting the new value
     await supabase
       .from('social_posts')
-      .update({ 
-        comments_count: supabase.rpc('increment' as any, { 
-          x: 1 
-        }) 
-      } as any)
+      .update({ comments_count: currentCount + 1 })
       .eq('id', postId);
 
     return { success: true };
@@ -67,6 +75,18 @@ export const addComment = async (postId: string, userId: string, content: string
 
 export const deleteComment = async (commentId: string, postId: string, userId: string): Promise<{ success: boolean; error?: string }> => {
   try {
+    // First, get the current comments count
+    const { data: postData, error: postError } = await supabase
+      .from('social_posts')
+      .select('comments_count')
+      .eq('id', postId)
+      .single();
+    
+    if (postError) throw postError;
+    
+    const currentCount = postData.comments_count || 0;
+    
+    // Delete the comment
     const { error } = await supabase
       .from('social_comments' as any)
       .delete()
@@ -75,14 +95,10 @@ export const deleteComment = async (commentId: string, postId: string, userId: s
 
     if (error) throw error;
 
-    // Update comments count using a typed RPC call
+    // Update comments count by directly setting the new value
     await supabase
       .from('social_posts')
-      .update({ 
-        comments_count: supabase.rpc('increment' as any, { 
-          x: -1 
-        }) 
-      } as any)
+      .update({ comments_count: Math.max(0, currentCount - 1) })
       .eq('id', postId);
 
     return { success: true };
