@@ -6,10 +6,10 @@ import BottomNavigation from '@/components/BottomNavigation';
 import SocialPost from '@/components/SocialPost';
 import CreatePost from '@/components/CreatePost';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from "sonner";
+import { Spinner } from '@/components/ui/spinner';
 
 interface Post {
   id: string;
@@ -30,7 +30,6 @@ const Social = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreatePost, setShowCreatePost] = useState(false);
-  const { toast } = useToast();
   const { user } = useAuth();
 
   const fetchPosts = async () => {
@@ -52,11 +51,7 @@ const Social = () => {
       setPosts(data as unknown as Post[]);
     } catch (error: any) {
       console.error('Erreur lors du chargement des publications:', error.message);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les publications",
-        variant: "destructive"
-      });
+      toast.error("Impossible de charger les publications");
     } finally {
       setLoading(false);
     }
@@ -66,7 +61,7 @@ const Social = () => {
     fetchPosts();
     
     // Subscribe to new posts
-    const subscription = supabase
+    const channel = supabase
       .channel('social_posts_changes')
       .on('postgres_changes', { 
         event: 'INSERT', 
@@ -78,7 +73,7 @@ const Social = () => {
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -113,7 +108,7 @@ const Social = () => {
               disabled={loading}
               className="text-vitamora-orange hover:text-vitamora-orange/90 hover:bg-orange-50"
             >
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+              {loading ? <Spinner className="h-4 w-4 mr-2" /> : <RefreshCw size={16} />}
               <span className="ml-1">Actualiser</span>
             </Button>
           </div>

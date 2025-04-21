@@ -1,65 +1,58 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
+
+type SocialLike = Tables['social_likes']['Row'];
 
 export const toggleSocialLike = async (postId: string, userId: string): Promise<{ success: boolean; error?: string }> => {
   try {
     // Vérifier si le post est déjà liké
-    const { data: existingLike } = await supabase
+    const { data: existingLike, error: checkError } = await supabase
       .from('social_likes')
       .select('id')
       .eq('post_id', postId)
       .eq('user_id', userId)
       .single();
 
+    if (checkError && checkError.code !== 'PGRST116') throw checkError;
+
     if (existingLike) {
-      // Supprimer le like
-      const { error } = await supabase
+      // Supprimer le like existant
+      const { error: deleteError } = await supabase
         .from('social_likes')
         .delete()
         .eq('post_id', postId)
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
       
       // Mettre à jour le compteur de likes
-      const { data: postData } = await supabase
+      const { error: updateError } = await supabase
         .from('social_posts')
-        .select('likes_count')
-        .eq('id', postId)
-        .single();
-        
-      const currentLikes = postData?.likes_count || 0;
-      
-      await supabase
-        .from('social_posts')
-        .update({ likes_count: Math.max(0, currentLikes - 1) })
+        .update({ likes_count: supabase.sql`greatest(0, likes_count - 1)` })
         .eq('id', postId);
-        
+
+      if (updateError) throw updateError;
+      
       return { success: true };
     } else {
       // Ajouter le like
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('social_likes')
         .insert({ 
           post_id: postId, 
           user_id: userId 
         });
 
-      if (error) throw error;
+      if (insertError) throw insertError;
       
       // Mettre à jour le compteur de likes
-      const { data: postData } = await supabase
+      const { error: updateError } = await supabase
         .from('social_posts')
-        .select('likes_count')
-        .eq('id', postId)
-        .single();
-        
-      const currentLikes = postData?.likes_count || 0;
-      
-      await supabase
-        .from('social_posts')
-        .update({ likes_count: currentLikes + 1 })
+        .update({ likes_count: supabase.sql`likes_count + 1` })
         .eq('id', postId);
+
+      if (updateError) throw updateError;
       
       return { success: true };
     }
@@ -71,12 +64,17 @@ export const toggleSocialLike = async (postId: string, userId: string): Promise<
 
 export const checkIsLiked = async (postId: string, userId: string): Promise<boolean> => {
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('social_likes')
       .select('id')
       .eq('post_id', postId)
       .eq('user_id', userId)
       .maybeSingle();
+
+    if (error) {
+      console.error('Erreur lors de la vérification du like:', error);
+      return false;
+    }
 
     return !!data;
   } catch (error) {
