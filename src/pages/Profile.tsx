@@ -14,26 +14,37 @@ import Header from '@/components/Header';
 import BottomNavigation from '@/components/BottomNavigation';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from "sonner";
-import { uploadProfileImage } from '@/utils/imageUploadService';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import type { Profile } from '@/utils/profileService';
-import { getProfileById } from '@/utils/profileService';
+import { getProfileById, uploadProfileImage } from '@/utils/profileService';
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     const fetchProfile = async () => {
+      setLoading(true);
       if (user) {
-        const profileData = await getProfileById(user.id);
-        if (profileData) {
-          setProfile(profileData);
+        try {
+          console.log("Fetching profile for user:", user.id);
+          const profileData = await getProfileById(user.id);
+          console.log("Profile data:", profileData);
+          if (profileData) {
+            setProfile(profileData);
+          }
+        } catch (error) {
+          console.error("Erreur lors de la récupération du profil:", error);
+          toast.error("Impossible de charger votre profil");
+        } finally {
+          setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
     };
     
@@ -43,26 +54,33 @@ const Profile = () => {
   const handleLogout = async () => {
     try {
       await signOut();
+      navigate('/login');
     } catch (error) {
       console.error("Erreur lors de la déconnexion:", error);
+      toast.error("Erreur lors de la déconnexion");
     }
   };
 
   const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) {
+      toast.error("Vous devez être connecté pour modifier votre profil");
+      return;
+    }
+    
     if (e.target.files && e.target.files[0]) {
       setIsUploading(true);
       try {
-        const result = await uploadProfileImage(e.target.files[0]);
+        const result = await uploadProfileImage(user.id, e.target.files[0]);
         if (!result.success) {
           throw new Error(result.error);
         }
         
+        toast.success("Photo de profil mise à jour");
+        
         // Rafraîchir le profil
-        if (user) {
-          const profileData = await getProfileById(user.id);
-          if (profileData) {
-            setProfile(profileData);
-          }
+        const profileData = await getProfileById(user.id);
+        if (profileData) {
+          setProfile(profileData);
         }
       } catch (error: any) {
         console.error("Erreur lors du téléchargement de l'image:", error);
@@ -115,50 +133,73 @@ const Profile = () => {
       <Header title="Mon profil" showBack={false} />
       
       <div className="vitamora-container">
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex items-center">
-            <div className="relative">
-              <Avatar className="w-16 h-16 border-2 border-vitamora-green">
-                <AvatarImage 
-                  src={profile?.profile_image_url || `https://ui-avatars.com/api/?name=${profile?.first_name || ''} ${profile?.last_name || ''}`} 
-                  alt="Photo de profil" 
-                />
-                <AvatarFallback>
-                  {profile?.first_name?.charAt(0) || ''}
-                  {profile?.last_name?.charAt(0) || ''}
-                </AvatarFallback>
-              </Avatar>
-              
-              <label 
-                htmlFor="profile-image" 
-                className="absolute bottom-0 right-0 p-1 bg-vitamora-orange text-white rounded-full cursor-pointer"
-              >
-                <Camera size={16} />
-              </label>
-              <input 
-                id="profile-image" 
-                type="file" 
-                accept="image/*" 
-                className="hidden" 
-                onChange={handleProfileImageChange}
-                disabled={isUploading}
-              />
-            </div>
-            
-            <div className="ml-4">
-              <h2 className="text-xl font-bold text-vitamora-green">
-                {profile ? `${profile.first_name} ${profile.last_name}` : "Chargement..."}
-              </h2>
-              <p className="text-gray-500">{user?.email}</p>
-              <p className="text-gray-500">{profile?.phone || "Téléphone non renseigné"}</p>
-              {profile?.role === 'admin' && (
-                <span className="text-xs bg-vitamora-green text-white px-2 py-1 rounded-full mt-1 inline-block">
-                  Administrateur
-                </span>
-              )}
+        {loading ? (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6 animate-pulse">
+            <div className="flex items-center">
+              <div className="w-16 h-16 rounded-full bg-gray-200"></div>
+              <div className="ml-4 space-y-2 w-full">
+                <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+                <div className="h-4 bg-gray-100 rounded w-1/4"></div>
+                <div className="h-4 bg-gray-100 rounded w-2/4"></div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : user ? (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div className="flex items-center">
+              <div className="relative">
+                <Avatar className="w-16 h-16 border-2 border-vitamora-green">
+                  <AvatarImage 
+                    src={profile?.profile_image_url || `https://ui-avatars.com/api/?name=${profile?.first_name || ''} ${profile?.last_name || ''}`} 
+                    alt="Photo de profil" 
+                  />
+                  <AvatarFallback>
+                    {profile?.first_name?.charAt(0) || ''}
+                    {profile?.last_name?.charAt(0) || ''}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <label 
+                  htmlFor="profile-image" 
+                  className="absolute bottom-0 right-0 p-1 bg-vitamora-orange text-white rounded-full cursor-pointer"
+                >
+                  <Camera size={16} />
+                </label>
+                <input 
+                  id="profile-image" 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={handleProfileImageChange}
+                  disabled={isUploading}
+                />
+              </div>
+              
+              <div className="ml-4">
+                <h2 className="text-xl font-bold text-vitamora-green">
+                  {profile ? `${profile.first_name || ''} ${profile.last_name || ''}` : "Utilisateur"}
+                </h2>
+                <p className="text-gray-500">{user?.email}</p>
+                <p className="text-gray-500">{profile?.phone || "Téléphone non renseigné"}</p>
+                {profile?.role === 'admin' && (
+                  <span className="text-xs bg-vitamora-green text-white px-2 py-1 rounded-full mt-1 inline-block">
+                    Administrateur
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6 text-center">
+            <p>Vous devez être connecté pour voir votre profil</p>
+            <button 
+              onClick={() => navigate('/login')}
+              className="mt-2 bg-vitamora-orange text-white px-4 py-2 rounded"
+            >
+              Se connecter
+            </button>
+          </div>
+        )}
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
           {menuItems.map((item, index) => (

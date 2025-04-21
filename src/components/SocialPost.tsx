@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from "sonner";
 import Comment from './Comment';
 import { Textarea } from './ui/textarea';
+import { Spinner } from './ui/spinner';
 import type { Profile } from '@/utils/profileService';
 import {
   DropdownMenu,
@@ -43,8 +44,8 @@ const SocialPost: React.FC<SocialPostProps> = ({
   time, 
   content, 
   image,
-  likes: initialLikes,
-  comments: initialComments,
+  likes: initialLikes = 0,
+  comments: initialComments = 0,
   postId,
   userId
 }) => {
@@ -55,12 +56,18 @@ const SocialPost: React.FC<SocialPostProps> = ({
   const [newComment, setNewComment] = useState('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [commentCount, setCommentCount] = useState(initialComments);
 
   useEffect(() => {
     if (userId) {
       const checkLike = async () => {
-        const isLiked = await checkIsLiked(postId, userId);
-        setLiked(isLiked);
+        try {
+          const isLiked = await checkIsLiked(postId, userId);
+          setLiked(isLiked);
+        } catch (error) {
+          console.error('Erreur lors de la vérification du like:', error);
+        }
       };
       
       checkLike();
@@ -68,15 +75,23 @@ const SocialPost: React.FC<SocialPostProps> = ({
   }, [postId, userId]);
 
   const loadComments = async () => {
-    const commentsData = await getCommentsByPostId(postId);
-    setComments(commentsData);
+    setIsLoading(true);
+    try {
+      const commentsData = await getCommentsByPostId(postId);
+      setComments(commentsData);
+      setCommentCount(commentsData.length);
+    } catch (error) {
+      console.error('Erreur lors du chargement des commentaires:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
     if (showComments) {
       loadComments();
     }
-  }, [showComments, postId]);
+  }, [showComments]);
 
   const toggleLike = async () => {
     if (!userId) {
@@ -85,19 +100,18 @@ const SocialPost: React.FC<SocialPostProps> = ({
     }
 
     try {
+      // Optimistic update
+      setLiked(!liked);
+      setLikeCount(prev => prev + (liked ? -1 : 1));
+
       const { success, error } = await toggleSocialLike(postId, userId);
       
       if (!success) {
+        // Revert on failure
+        setLiked(!liked);
+        setLikeCount(prev => prev + (liked ? 1 : -1));
         throw new Error(error);
       }
-      
-      setLiked(!liked);
-      setLikeCount(prev => prev + (liked ? -1 : 1));
-      
-      await supabase
-        .from('social_posts')
-        .update({ likes_count: likeCount + (liked ? -1 : 1) })
-        .eq('id', postId);
     } catch (error: any) {
       console.error('Erreur lors de la mise à jour des likes:', error);
       toast.error("Une erreur est survenue");
@@ -117,10 +131,10 @@ const SocialPost: React.FC<SocialPostProps> = ({
 
       setNewComment('');
       loadComments();
-      toast.success("Commentaire ajouté");
+      setCommentCount(prev => prev + 1);
     } catch (error: any) {
       console.error('Erreur lors de l\'ajout du commentaire:', error);
-      toast.error(error.message);
+      toast.error(error.message || "Erreur lors de l'ajout du commentaire");
     } finally {
       setIsSubmittingComment(false);
     }
@@ -135,10 +149,10 @@ const SocialPost: React.FC<SocialPostProps> = ({
       }
 
       loadComments();
-      toast.success("Commentaire supprimé");
+      setCommentCount(prev => Math.max(0, prev - 1));
     } catch (error: any) {
       console.error('Erreur lors de la suppression du commentaire:', error);
-      toast.error(error.message);
+      toast.error(error.message || "Erreur lors de la suppression du commentaire");
     }
   };
 
@@ -157,10 +171,13 @@ const SocialPost: React.FC<SocialPostProps> = ({
       // through the real-time subscription
     } catch (error: any) {
       toast.error(`Erreur lors de la suppression: ${error.message}`);
+    } finally {
+      setIsDeleteDialogOpen(false);
     }
   };
 
-  const isAuthor = userId && postId.startsWith(userId);
+  // Vérifie si l'utilisateur est l'auteur du post
+  const isAuthor = userId && userId === postId.split('-')[0];
 
   return (
     <div className="bg-white rounded-lg shadow p-4">
@@ -196,7 +213,15 @@ const SocialPost: React.FC<SocialPostProps> = ({
       
       {image && (
         <div className="my-3 rounded-lg overflow-hidden">
-          <img src={image} alt="Publication" className="w-full h-auto" />
+          <img 
+            src={image} 
+            alt="Publication" 
+            className="w-full h-auto max-h-96 object-cover" 
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = 'https://via.placeholder.com/400x300?text=Image+non+disponible';
+            }}
+          />
         </div>
       )}
       
@@ -214,7 +239,7 @@ const SocialPost: React.FC<SocialPostProps> = ({
           className="flex items-center gap-1 text-gray-500"
         >
           <MessageCircle size={20} />
-          <span>{comments.length}</span>
+          <span>{commentCount}</span>
         </button>
         
         <button className="flex items-center gap-1 text-gray-500">
@@ -225,20 +250,28 @@ const SocialPost: React.FC<SocialPostProps> = ({
 
       {showComments && (
         <div className="mt-4 border-t border-gray-100 pt-4">
-          <div className="space-y-4">
-            {comments.map((comment) => (
-              <Comment
-                key={comment.id}
-                content={comment.content}
-                createdAt={comment.created_at}
-                user={comment.user}
-                canDelete={userId === comment.user_id}
-                onDelete={() => handleDeleteComment(comment.id)}
-              />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="flex justify-center p-4">
+              <Spinner className="h-6 w-6 text-vitamora-orange" />
+            </div>
+          ) : comments.length > 0 ? (
+            <div className="space-y-4">
+              {comments.map((comment) => (
+                <Comment
+                  key={comment.id}
+                  content={comment.content}
+                  createdAt={comment.created_at}
+                  user={comment.user}
+                  canDelete={userId === comment.user_id}
+                  onDelete={() => handleDeleteComment(comment.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-gray-500 py-2">Aucun commentaire</p>
+          )}
 
-          {userId && (
+          {userId ? (
             <div className="mt-4 flex gap-2">
               <Textarea
                 value={newComment}
@@ -251,9 +284,17 @@ const SocialPost: React.FC<SocialPostProps> = ({
                 disabled={isSubmittingComment || !newComment.trim()}
                 className="bg-vitamora-orange text-white px-4 py-2 rounded-lg hover:bg-vitamora-orange/90 disabled:opacity-50"
               >
-                <Send size={20} />
+                {isSubmittingComment ? (
+                  <Spinner className="h-5 w-5" />
+                ) : (
+                  <Send size={20} />
+                )}
               </button>
             </div>
+          ) : (
+            <p className="text-center text-gray-500 mt-4">
+              Connectez-vous pour commenter
+            </p>
           )}
         </div>
       )}

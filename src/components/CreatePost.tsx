@@ -1,150 +1,166 @@
 
 import React, { useState } from 'react';
-import { Camera, Send, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { useAuth } from '@/contexts/AuthContext';
+import { Upload, X } from 'lucide-react';
+import { Button } from './ui/button';
+import { Textarea } from './ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from "sonner";
-import { uploadImage } from '@/utils/imageUploadService';
+import { Spinner } from './ui/spinner';
 
-const CreatePost = () => {
+interface CreatePostProps {
+  onSuccess?: () => void;
+}
+
+const CreatePost: React.FC<CreatePostProps> = ({ onSuccess }) => {
   const [content, setContent] = useState('');
-  const [image, setImage] = useState<File | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setImage(file);
-      setImagePreview(URL.createObjectURL(file));
+      setSelectedImage(file);
+      
+      // Create image preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target) {
+          setImagePreview(e.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const removeImage = () => {
-    setImage(null);
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-      setImagePreview(null);
-    }
+    setSelectedImage(null);
+    setImagePreview(null);
   };
 
   const handleSubmit = async () => {
-    if (!content.trim() && !image) {
-      toast.error("Veuillez ajouter du texte ou une image à votre publication.");
-      return;
-    }
-
     if (!user) {
-      toast.error("Vous devez être connecté pour publier.");
+      toast.error("Vous devez être connecté pour publier");
       return;
     }
 
-    setIsLoading(true);
+    if (!content.trim() && !selectedImage) {
+      toast.error("Veuillez ajouter du texte ou une image");
+      return;
+    }
 
+    setIsSubmitting(true);
     try {
       let imageUrl = null;
 
       // Upload image if selected
-      if (image) {
-        const uploadResult = await uploadImage(image, 'social_images', `posts/${user.id}`);
-        
-        if (!uploadResult.success) {
-          throw new Error(`Erreur lors du téléchargement de l'image: ${uploadResult.error}`);
+      if (selectedImage) {
+        const fileExt = selectedImage.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `social/${user.id}/${fileName}`;
+
+        const { error: uploadError, data } = await supabase.storage
+          .from('images')
+          .upload(filePath, selectedImage);
+
+        if (uploadError) {
+          throw uploadError;
         }
-        
-        imageUrl = uploadResult.url;
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('images')
+          .getPublicUrl(filePath);
+
+        imageUrl = urlData.publicUrl;
       }
 
-      // Create post in database
+      // Create post
       const { error: postError } = await supabase
         .from('social_posts')
         .insert({
-          user_id: user.id,
-          content,
+          content: content.trim(),
           image_url: imageUrl,
+          user_id: user.id,
           likes_count: 0,
           comments_count: 0
         });
 
-      if (postError) {
-        throw new Error(`Erreur lors de la création du post: ${postError.message}`);
-      }
-
-      toast.success("Publication réussie!");
+      if (postError) throw postError;
 
       // Reset form
       setContent('');
-      removeImage();
+      setSelectedImage(null);
+      setImagePreview(null);
+      
+      toast.success("Publication créée avec succès!");
+      
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error: any) {
-      toast.error(error.message || "Une erreur s'est produite lors de la publication");
-      console.error("Erreur de publication:", error);
+      console.error('Erreur lors de la création de la publication:', error);
+      toast.error(error.message || "Erreur lors de la création de la publication");
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-4">
+    <div className="bg-white rounded-lg shadow-md p-4 mb-4">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-          {user && (
-            <img 
-              src={user.user_metadata?.avatar_url || "https://ui-avatars.com/api/?name=" + (user.user_metadata?.name || user.email)}
-              alt="Profile" 
-              className="w-full h-full object-cover"
-            />
-          )}
-        </div>
-        <div className="flex-grow space-y-3">
+        <img 
+          src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.user_metadata?.first_name || 'U'}+${user?.user_metadata?.last_name || ''}`} 
+          alt="Profil" 
+          className="w-10 h-10 rounded-full object-cover"
+        />
+        <div className="flex-1">
           <Textarea
-            placeholder="Que voulez-vous partager?"
+            placeholder="Partagez vos pensées..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="w-full resize-none focus-visible:ring-vitamora-orange"
+            className="resize-none border-gray-200 focus:border-vitamora-orange focus:ring-vitamora-orange"
             rows={3}
           />
           
           {imagePreview && (
-            <div className="relative">
-              <img src={imagePreview} alt="Preview" className="max-h-60 rounded-lg w-auto" />
+            <div className="relative mt-2">
+              <img 
+                src={imagePreview} 
+                alt="Preview" 
+                className="w-full h-40 object-cover rounded-lg"
+              />
               <button 
                 onClick={removeImage}
-                className="absolute top-2 right-2 bg-black bg-opacity-50 rounded-full p-1 text-white"
+                className="absolute top-2 right-2 bg-gray-800 bg-opacity-70 text-white rounded-full p-1"
               >
                 <X size={16} />
               </button>
             </div>
           )}
           
-          <div className="flex justify-between items-center pt-2">
-            <div className="flex gap-2">
-              <label htmlFor="post-image" className="cursor-pointer flex items-center gap-1 text-vitamora-orange hover:text-vitamora-orange/80">
-                <Camera size={20} />
-                <span>Photo</span>
-              </label>
+          <div className="flex justify-between items-center mt-3">
+            <label className="flex items-center gap-2 cursor-pointer text-gray-600 hover:text-vitamora-orange">
+              <Upload size={18} />
+              <span>Image</span>
               <input 
-                id="post-image" 
                 type="file" 
-                accept="image/*" 
                 className="hidden" 
+                accept="image/*"
                 onChange={handleImageChange}
+                disabled={isSubmitting}
               />
-            </div>
+            </label>
             
             <Button 
               onClick={handleSubmit}
-              disabled={isLoading || (!content.trim() && !image)}
-              className="bg-vitamora-orange hover:bg-vitamora-orange/90 flex items-center gap-1"
+              disabled={(!content.trim() && !selectedImage) || isSubmitting}
+              className="bg-vitamora-orange hover:bg-vitamora-orange/90 text-white"
             >
-              {isLoading ? "Publication..." : (
-                <>
-                  <Send size={16} />
-                  <span>Publier</span>
-                </>
-              )}
+              {isSubmitting ? <Spinner className="h-4 w-4 mr-2" /> : null}
+              Publier
             </Button>
           </div>
         </div>

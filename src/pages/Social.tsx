@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from "sonner";
 
 interface Post {
   id: string;
@@ -47,6 +48,7 @@ const Social = () => {
         throw error;
       }
 
+      console.log("Posts récupérés:", data);
       setPosts(data as unknown as Post[]);
     } catch (error: any) {
       console.error('Erreur lors du chargement des publications:', error.message);
@@ -95,7 +97,11 @@ const Social = () => {
               <span>Créer une publication</span>
             </Button>
           ) : (
-            <CreatePost />
+            <CreatePost onSuccess={() => {
+              setShowCreatePost(false);
+              fetchPosts();
+              toast.success("Publication créée avec succès!");
+            }} />
           )}
           
           <div className="flex justify-between items-center mb-4">
@@ -137,8 +143,8 @@ const Social = () => {
             {posts.map((post) => (
               <SocialPost
                 key={post.id}
-                username={`${post.user.first_name} ${post.user.last_name}`}
-                avatar={post.user.profile_image_url || `https://ui-avatars.com/api/?name=${post.user.first_name}+${post.user.last_name}`}
+                username={`${post.user?.first_name || 'Utilisateur'} ${post.user?.last_name || ''}`}
+                avatar={post.user?.profile_image_url || `https://ui-avatars.com/api/?name=${post.user?.first_name || 'U'}+${post.user?.last_name || ''}`}
                 time={new Date(post.created_at).toLocaleString('fr-FR', {
                   day: 'numeric',
                   month: 'short',
@@ -147,8 +153,8 @@ const Social = () => {
                 })}
                 content={post.content}
                 image={post.image_url}
-                likes={post.likes_count}
-                comments={post.comments_count}
+                likes={post.likes_count || 0}
+                comments={post.comments_count || 0}
                 postId={post.id}
                 userId={user?.id}
               />
