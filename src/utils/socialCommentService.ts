@@ -12,6 +12,7 @@ export interface Comment {
 
 export const getCommentsByPostId = async (postId: string): Promise<Comment[]> => {
   try {
+    // Nous utilisons `as unknown as PostgrestResponse<Comment[]>` pour contourner les problèmes de typage
     const { data, error } = await supabase
       .from('social_comments')
       .select(`
@@ -56,7 +57,7 @@ export const addComment = async (postId: string, userId: string, content: string
         post_id: postId, 
         user_id: userId,
         content
-      });
+      } as any); // Utiliser `as any` pour éviter l'erreur de typage
 
     if (error) throw error;
 
@@ -91,7 +92,7 @@ export const deleteComment = async (commentId: string, postId: string, userId: s
       .from('social_comments')
       .delete()
       .eq('id', commentId)
-      .eq('user_id', userId);
+      .eq('user_id', userId) as any; // Utiliser `as any` pour éviter l'erreur de typage
 
     if (error) throw error;
 
