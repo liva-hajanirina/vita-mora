@@ -6,7 +6,7 @@ type SocialLike = Database['public']['Tables']['social_likes']['Row'];
 
 export const toggleSocialLike = async (postId: string, userId: string): Promise<{ success: boolean; error?: string }> => {
   try {
-    // Vérifier si le post est déjà liké
+    // Check if post is already liked
     const { data: existingLike, error: checkError } = await supabase
       .from('social_likes')
       .select('id')
@@ -17,7 +17,7 @@ export const toggleSocialLike = async (postId: string, userId: string): Promise<
     if (checkError) throw checkError;
 
     if (existingLike) {
-      // Supprimer le like existant
+      // Delete existing like
       const { error: deleteError } = await supabase
         .from('social_likes')
         .delete()
@@ -26,14 +26,17 @@ export const toggleSocialLike = async (postId: string, userId: string): Promise<
 
       if (deleteError) throw deleteError;
       
-      // Mettre à jour le compteur de likes
-      const { error: updateError } = await supabase.rpc('decrement_likes_count', { post_id: postId });
+      // Update like counter with direct update since RPC has type issues
+      const { error: updateError } = await supabase
+        .from('social_posts')
+        .update({ likes_count: supabase.from('social_posts').select('likes_count').eq('id', postId).single().then(r => Math.max(0, (r.data?.likes_count || 0) - 1)) })
+        .eq('id', postId);
       
       if (updateError) throw updateError;
       
       return { success: true };
     } else {
-      // Ajouter le like
+      // Add like
       const { error: insertError } = await supabase
         .from('social_likes')
         .insert({ 
@@ -43,15 +46,18 @@ export const toggleSocialLike = async (postId: string, userId: string): Promise<
 
       if (insertError) throw insertError;
       
-      // Mettre à jour le compteur de likes
-      const { error: updateError } = await supabase.rpc('increment_likes_count', { post_id: postId });
+      // Update like counter with direct update since RPC has type issues
+      const { error: updateError } = await supabase
+        .from('social_posts')
+        .update({ likes_count: supabase.from('social_posts').select('likes_count').eq('id', postId).single().then(r => (r.data?.likes_count || 0) + 1) })
+        .eq('id', postId);
       
       if (updateError) throw updateError;
       
       return { success: true };
     }
   } catch (error: any) {
-    console.error('Erreur lors de la gestion des likes:', error);
+    console.error('Error handling likes:', error);
     return { success: false, error: error.message };
   }
 };
