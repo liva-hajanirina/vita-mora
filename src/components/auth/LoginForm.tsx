@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { FormInput } from '@/components/ui/form-input';
 import { useAuth } from '@/contexts/AuthContext';
 
 const LoginForm = () => {
@@ -32,51 +32,35 @@ const LoginForm = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-1">
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email ou téléphone
-        </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Mail size={18} className="text-gray-400" />
-          </div>
-          <Input
-            id="email"
-            type="text"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="pl-10"
-            placeholder="Entrez votre email ou téléphone"
-            required
-          />
-        </div>
-      </div>
+      <FormInput
+        id="email"
+        type="text"
+        label="Email ou téléphone"
+        icon={Mail}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Entrez votre email ou téléphone"
+        required
+      />
 
       <div className="space-y-1">
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-          Mot de passe
-        </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Lock size={18} className="text-gray-400" />
-          </div>
-          <Input
-            id="password"
-            type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="pl-10"
-            placeholder="Entrez votre mot de passe"
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center"
-          >
-            {showPassword ? <EyeOff size={18} className="text-gray-500" /> : <Eye size={18} className="text-gray-500" />}
-          </button>
-        </div>
+        <FormInput
+          id="password"
+          type={showPassword ? "text" : "password"}
+          label="Mot de passe"
+          icon={Lock}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Entrez votre mot de passe"
+          required
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-3 top-9 text-gray-500"
+        >
+          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
       </div>
 
       <div className="flex items-center justify-between">
