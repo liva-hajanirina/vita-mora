@@ -29,15 +29,9 @@ const Login = () => {
     
     try {
       setLoading(true);
-      const result = await signIn(email, password);
-      
-      // Ajouter une gestion explicite de la connexion
-      if (result) {
-        toast.success("Connexion réussie");
-        navigate('/home', { replace: true });
-      } else {
-        toast.error("Échec de la connexion. Veuillez vérifier vos identifiants.");
-      }
+      await signIn(email, password);
+      // La redirection est gérée par le listener onAuthStateChange dans AuthContext
+      toast.success("Connexion en cours...");
     } catch (error) {
       console.error("Erreur de connexion:", error);
       toast.error("Une erreur est survenue lors de la connexion");
