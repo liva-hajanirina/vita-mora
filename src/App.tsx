@@ -35,8 +35,8 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            {/* Redirection par défaut vers la page de connexion */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            {/* Redirection par défaut vers la page d'accueil */}
+            <Route path="/" element={<Navigate to="/home" replace />} />
             
             {/* Pages d'authentification */}
             <Route path="/login" element={<Login />} />

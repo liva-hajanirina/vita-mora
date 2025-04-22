@@ -7,7 +7,7 @@ const BottomNavigation = () => {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg rounded-t-xl border-t border-gray-200 h-16 flex items-center justify-around z-50">
       <NavLink 
-        to="/" 
+        to="/home" 
         className={({ isActive }) => 
           `flex flex-col items-center ${isActive ? 'text-vitamora-orange' : 'text-gray-500'}`
         }
