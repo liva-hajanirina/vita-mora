@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
@@ -18,10 +17,10 @@ const Login = () => {
   const navigate = useNavigate();
   const { signIn, signInWithGoogle, signInWithFacebook, user } = useAuth();
 
-  // Rediriger si l'utilisateur est déjà connecté
+  // Rediriger immédiatement si l'utilisateur est déjà connecté
   useEffect(() => {
     if (user) {
-      navigate('/home');
+      navigate('/home', { replace: true });
     }
   }, [user, navigate]);
 
@@ -30,9 +29,19 @@ const Login = () => {
     
     try {
       setLoading(true);
-      await signIn(email, password);
+      const result = await signIn(email, password);
+      
+      // Ajouter une gestion explicite de la connexion
+      if (result) {
+        toast.success("Connexion réussie");
+        navigate('/home', { replace: true });
+      } else {
+        toast.error("Échec de la connexion. Veuillez vérifier vos identifiants.");
+      }
     } catch (error) {
       console.error("Erreur de connexion:", error);
+      toast.error("Une erreur est survenue lors de la connexion");
+    } finally {
       setLoading(false);
     }
   };
