@@ -2,8 +2,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-type SocialLike = Database['public']['Tables']['social_likes']['Row'];
-
 export const toggleSocialLike = async (postId: string, userId: string): Promise<{ success: boolean; error?: string }> => {
   try {
     // Check if post is already liked
@@ -26,10 +24,20 @@ export const toggleSocialLike = async (postId: string, userId: string): Promise<
 
       if (deleteError) throw deleteError;
       
-      // Update like counter with direct update since RPC has type issues
+      // First get the current like count
+      const { data: postData, error: getError } = await supabase
+        .from('social_posts')
+        .select('likes_count')
+        .eq('id', postId)
+        .single();
+      
+      if (getError) throw getError;
+      
+      // Then update the like counter
+      const newCount = Math.max(0, (postData?.likes_count || 0) - 1);
       const { error: updateError } = await supabase
         .from('social_posts')
-        .update({ likes_count: supabase.from('social_posts').select('likes_count').eq('id', postId).single().then(r => Math.max(0, (r.data?.likes_count || 0) - 1)) })
+        .update({ likes_count: newCount })
         .eq('id', postId);
       
       if (updateError) throw updateError;
@@ -46,10 +54,20 @@ export const toggleSocialLike = async (postId: string, userId: string): Promise<
 
       if (insertError) throw insertError;
       
-      // Update like counter with direct update since RPC has type issues
+      // First get the current like count
+      const { data: postData, error: getError } = await supabase
+        .from('social_posts')
+        .select('likes_count')
+        .eq('id', postId)
+        .single();
+      
+      if (getError) throw getError;
+      
+      // Then update the like counter
+      const newCount = (postData?.likes_count || 0) + 1;
       const { error: updateError } = await supabase
         .from('social_posts')
-        .update({ likes_count: supabase.from('social_posts').select('likes_count').eq('id', postId).single().then(r => (r.data?.likes_count || 0) + 1) })
+        .update({ likes_count: newCount })
         .eq('id', postId);
       
       if (updateError) throw updateError;
