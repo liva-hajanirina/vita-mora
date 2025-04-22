@@ -1,8 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/types";
 
-type SocialLike = Tables['social_likes']['Row'];
+type SocialLike = Database['public']['Tables']['social_likes']['Row'];
 
 export const toggleSocialLike = async (postId: string, userId: string): Promise<{ success: boolean; error?: string }> => {
   try {
@@ -12,9 +12,9 @@ export const toggleSocialLike = async (postId: string, userId: string): Promise<
       .select('id')
       .eq('post_id', postId)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (checkError && checkError.code !== 'PGRST116') throw checkError;
+    if (checkError) throw checkError;
 
     if (existingLike) {
       // Supprimer le like existant
@@ -27,11 +27,8 @@ export const toggleSocialLike = async (postId: string, userId: string): Promise<
       if (deleteError) throw deleteError;
       
       // Mettre à jour le compteur de likes
-      const { error: updateError } = await supabase
-        .from('social_posts')
-        .update({ likes_count: supabase.sql`greatest(0, likes_count - 1)` })
-        .eq('id', postId);
-
+      const { error: updateError } = await supabase.rpc('decrement_likes_count', { post_id: postId });
+      
       if (updateError) throw updateError;
       
       return { success: true };
@@ -47,11 +44,8 @@ export const toggleSocialLike = async (postId: string, userId: string): Promise<
       if (insertError) throw insertError;
       
       // Mettre à jour le compteur de likes
-      const { error: updateError } = await supabase
-        .from('social_posts')
-        .update({ likes_count: supabase.sql`likes_count + 1` })
-        .eq('id', postId);
-
+      const { error: updateError } = await supabase.rpc('increment_likes_count', { post_id: postId });
+      
       if (updateError) throw updateError;
       
       return { success: true };
